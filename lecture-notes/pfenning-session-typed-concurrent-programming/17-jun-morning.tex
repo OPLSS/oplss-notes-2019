@@ -93,11 +93,9 @@ We assume here that \texttt{A} is a list because we use the
 \texttt{{[}{]}} operator on it to \emph{presumably} fetch the first
 element of the sorted list.
 
-\textbf{Logical reasoning}: \emph{What} does the program do?
+\textbf{Logical reasoning}: \emph{What} does the program do?\\
 
-\begin{verbatim}
-hd \circ sort
-\end{verbatim}
+\verb|hd |\(\circ\)\verb| sort| \\
 
 Here we use function composition \(\circ\) to capture that we sort the
 list and then take the first element. Here, \texttt{hd} is a function
