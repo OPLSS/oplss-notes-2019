@@ -30,7 +30,12 @@
 
 
 \usepackage{proof}
+\setlength{\inferLineSkip}{4pt}
+
 \usepackage{hyperref}
+\usepackage{dashrule}
+
+
 
 
 \setlength\parindent{0pt} % Removes all indentation from paragraphs
@@ -176,6 +181,46 @@ How can we eliminate a cut? For example:
 
 
 
+
+\[
+\infer[\textsc{cut}]
+{A \vdash B \oplus A }{\infer[\oplus R_1]{A \vdash A \oplus B}{\infer[\textsc{ID}]{A \vdash A}{}} \hspace{3em} \infer[\oplus L]{A \oplus B \vdash B \oplus A}{\infer[\oplus R_2]{A \vdash B \oplus A}{\infer[\textsc{ID}]{A \vdash A}{}} \hspace{1em} \infer[\oplus R_1]{B \vdash B \oplus A}{\infer[\textsc{ID}]{B \vdash B}{}}  }}
+\]
+
+
+It is possible to "push up the cut". We focus on A and split the proof in two steps:
+
+Step 1: 
+\[
+\infer[]{A \vdash B \oplus A}{\infer[\textsc{ID}]{A \vdash A}{} \hspace{2em} \infer[\oplus R_2]{A \vdash B \oplus A}{\infer[\textsc{ID}]{A \vdash A}{}}}
+\]
+
+Step 2: 
+\[
+\infer[\oplus R_2]{A \vdash B \oplus A}{\infer[\textsc{ID}]{A \vdash A}{}}
+\]
+
+We then introduce a new judgement to indicate that A entails B without cut:
+
+\[
+\; A\; \triangleright\; B\; 
+\]
+
+We will then have similar left and right rules:
+
+\[
+\infer[\oplus L^{\triangleright}]{A \oplus B \triangleright C}{A \triangleright C \hspace{1em} B \triangleright C}
+\]
+
+\[
+\infer[\oplus R_{1}^{\triangleright}]{A \triangleright B \oplus C}{A \triangleright B}
+\]
+
+\[
+\infer[\oplus R_{2}^{\triangleright}]{A \triangleright B \oplus C}{A \triangleright C}
+\]
+
+\subsubsectiopn{Proofs by rule induction}
 
 %----------------------------------------------------------------------------------------
 % BIBLIOGRAPHY
