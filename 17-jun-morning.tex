@@ -35,6 +35,8 @@
 \usepackage{hyperref}
 \usepackage{dashrule}
 
+\usepackage{bussproofs}
+
 
 
 
@@ -344,8 +346,52 @@ We shall assume all the possible cases.
 
 Case 1
 \[
-\infer[]{A \vdash C \hspace{1em} B \vdash C}{A \oplus B \vdash C}
+\infer[]{A \vdash C \hspace{1em} B \vdash C}{A \oplus B \vdash C} 
 \]
+
+By inductive hypothesis (I.H.) :
+\[
+\infer[\oplus L^\triangleright]{A \oplus B \triangleright C}{A \triangleright C \hspace{2em} B \triangleright C}
+\]
+
+Case 2
+\[
+\infer[\textsc{cut}]{A \vdash C}{A \vdash B \hspace{2em} B \vdash C}
+\]
+By inductive hypothesis (I.H.) :
+\[
+\infer[]{A \triangleright C}{A \triangleright B \hspace{2em} B \triangleright C}
+\]
+
+
+\subsubsection{Lemma: Admissibility of Cut}
+If 
+\[
+\; A\; \triangleright\; B\; 
+\] 
+and
+\[
+\; B\; \triangleright\; C\; 
+\]
+
+then
+\[
+\; A\; \triangleright\; C\; 
+\]
+
+Using constructive proofs, we shall come up with the proof. We shall assume all possible cases:
+[TODO - complete all the possible cases; showing three; 4 missing]
+
+Case 1:
+
+% \begin{prooftree}
+%      \AxiomC{$A \vdash A$}
+%      \dashedLine
+%      \UnaryInfC{$\Gamma \vdash A \rightarrow B$}
+% \end{prooftree}
+% \[
+% \infer[\textsc{cut}]{A \triangleright C}{\infer[\textsc{ID}]{A \triangleright A}{}}
+% \]
 
 
 
