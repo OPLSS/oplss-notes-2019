@@ -62,7 +62,7 @@
 \begin{tabular}{l r}
 Date Performed: & June 17th 2019 \\ % Date the experiment was performed
 Students: & J.W.N. Paulus  \\
-& R. G. Singh \\ % Partner names
+& R. Gurdeep Singh \\ % Partner names
 & H. C. A. Tavante \\
 Instructor: & Professor Smith % Instructor/supervisor
 \end{tabular}
@@ -130,7 +130,7 @@ Logic is:
 	\item
 	The process of \textbf{deduction}
 	\item
-	About \textbf{inference} rather than the truth
+	About what you can \textbf{infer} from some axioms rather then what you know as truth.
 	\item
 	Wikipedia: the systematic study of the
 	\href{https://en.wikipedia.org/wiki/Logical_form}{form} of
@@ -144,8 +144,9 @@ Logic is:
 
 \subsection{Form and inference rules}
 
+
 A sequent has following form: \[
-\underbrace{A}_{\text{Antecedent}} \vdash \underbrace{B}_{\text{succedent}}
+\underbrace{A}_{\text{Antecedent or Assumption}} \vdash \underbrace{B}_{\text{succedent}}
 \] Where the antecedent contains the assumption, and succedent contains
 the ``conclusion''. In the case of the \emph{singleton} logic, both
 \(A\) and \(B\) must be a singleton, i.e.~exactly one antecedent and one succedent (and they should both be propositions). The \(\vdash\) symbol should be read as ``entails''.
@@ -155,7 +156,7 @@ the ``conclusion''. In the case of the \emph{singleton} logic, both
 We use the ``\(\&\)'' for conjunction (and) and the ``\(\oplus\)'' for
 disjunction (simple logical or, not to be confused with exclusive or).
 
-\subsubsection{Inference rules}
+\subsubsection{Base inference rules}
 The fist rule we introduce is the states that we can derive that \(A\) entails \(A\) without needing anything. 
 \[
 \infer[\textsc{id}_A]{A \vdash A}{}
@@ -169,8 +170,124 @@ The second rule we introduce is the \(\textsc{cut}\) rule. It encodes the transi
 \]
 
 
-\paragraph{Connectors.} So far the propositions in our . Let's introduce some connectors. Each connector will have a "left", introducing.One of the most basic connectors is the "or" connector. We will write it as \(\oplus\) here\footnote{The \(\oplus\) is simple or, and should not be confused with the exclusive or operator}.
+\subsubsection{Connectors.} 
+So far the propositions in our . Let's introduce some connectors. Each 
 
+\paragraph{Disjunction / or operator \(\oplus\)}
+One of the most basic connectors is the ``or'' connector. We will write it as \(\oplus\) here\footnote{The \(\oplus\) is simple or, and should not be confused with the exclusive or operator}. Its rules are:
+
+\[
+\infer[\oplus\textsc{l}]
+{A \oplus B \vdash C}{A \vdash C & B \vdash C}
+\qquad
+\infer[\oplus\textsc{r}_1]
+{A \vdash B \oplus C}{A \vdash B}
+\qquad
+\infer[\oplus\textsc{r}_2]
+{A \vdash B \oplus C}{A \vdash C}
+\]
+
+
+
+Assume made a mistake when defining \( \oplus \), and we used the following for \(\oplus L\) instead:
+
+\[
+\infer[\oplus \textsc{l}?]{A \oplus B \vdash C}{A \vdash C}
+\]
+
+Our slight oversight allows us to make following derivation:
+\[
+\infer[\textsc{cut}_{A \oplus B}]
+{B \vdash A}
+{
+	\infer[\oplus R_2]
+	{B \vdash A \oplus B}
+	{
+		\infer[\textsc{id}_B]
+		{B \vdash B}
+		{}
+	}
+	&
+	\infer[\oplus L]
+	{A \oplus B \vdash A}
+	{
+		\infer[\textsc{id}_A]
+		{A \vdash A}
+		{}
+	}
+}
+\]
+
+It states that we that anything is able to entail anything, which makes no sense.
+
+\medskip
+
+With the correct rules we can prove  the commutativity of \(\oplus\) like this:
+
+\[
+\infer[{\oplus L}]
+{A \oplus B \vdash B \oplus A}
+{
+	\infer[{\oplus R_2}]
+	{A \vdash B \oplus A}
+	{
+		\infer[{ID_A}]
+		{A \vdash A}
+		{}
+	}
+	\infer[{\oplus R_1}]
+	{B \vdash B \oplus A}
+	{
+		\infer[{ID_B}]
+		{B \vdash B}
+		{}
+	}
+}
+\]
+
+
+
+\paragraph{Conjunction / and / with operator \(\&\)}
+The next connector we tackle is the and operator, denoted by \(\&\). Its rules are defined below. 
+
+\[
+\infer[{ \& R}]
+{A \& B \vdash C}
+{A \vdash B & A \vdash C}
+\qquad
+\infer[{\& L_1}]
+{A \& B \vdash C}
+{A \vdash C}
+\qquad
+\infer[{\& L_2}]
+{A \& B \vdash C}
+{B \vdash C}
+\]
+
+
+\paragraph{Things we cannot have}
+\begin{enumerate}
+	\item Implication \\
+	      The problem with implication is that to use it, we need to allow 
+	      more than one assumption in the proofs. This does not fit in our
+	      singleton logic model.
+	\item Negation \(A \vdash \neg B\)
+\end{enumerate}
+
+
+
+
+\fbox{
+	\parbox{\textwidth}{
+		\textbf{Wise words of Pfenning}:\\
+		\begin{verse}
+			I'm not interested in success, only in failure 
+		\end{verse}
+	\begin{verse}
+	I once needed to do a proof with 64 cases, you can guess which 63 I did first. The last one did not work out and I had to switch topics. 
+	\end{verse}
+	}
+}
 
 \section{Cut-Elimination}
 
