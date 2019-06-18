@@ -28,6 +28,11 @@
 \usepackage{amsmath} % Required for some math elements 
 
 
+
+\usepackage{proof}
+\usepackage{hyperref}
+
+
 \setlength\parindent{0pt} % Removes all indentation from paragraphs
 
 \renewcommand{\labelenumi}{\alph{enumi}.} % Make numbering in the enumerate environment by letter rather than number (e.g. section 6)
@@ -66,6 +71,103 @@ Instructor: & Professor Smith % Instructor/supervisor
 %----------------------------------------------------------------------------------------
 % SECTION 1
 %----------------------------------------------------------------------------------------
+
+
+
+\subsection*{Motivation and intro}
+
+There are two ways to look at a program. From an operational standpoint
+and form a logical standpoint. Let us look at an example program the
+\emph{presumably} gets the smallest element form \emph{presumably} a
+list.
+
+\textbf{Operational reasoning}: \emph{How} a program works.
+
+\begin{verbatim}
+sort(A)
+x = A[0]
+\end{verbatim}
+
+Here \texttt{sort} \emph{presumably} sorts the list \texttt{A} inplace.
+We assume here that \texttt{A} is a list because we use the
+\texttt{{[}{]}} operator on it to \emph{presumably} fetch the first
+element of the sorted list.
+
+\textbf{Logical reasoning}: \emph{What} does the program do?
+
+\begin{verbatim}
+hd \circ sort
+\end{verbatim}
+
+Here we use function composition \(\circ\) to capture that we sort the
+list and then take the first element. Here, \texttt{hd} is a function
+that takes the first element of something, and \texttt{sort} is a
+function that sorts its input and returns it. Note that we do not
+specify how \texttt{sort} or \texttt{hd} is implemented. And it from a
+logical reasoning point of view, we don't care.
+
+\textbf{Designing abstractions}
+
+When we design abstractions we aim to capture some computational
+phenomenon such that:
+
+\begin{enumerate}
+	\item
+	We can reason about it operationally
+	\item
+	We can reason about it logically
+	\item (1) and (2) are coherent
+\end{enumerate}
+
+\section{Lecture 1: Sequent Calculus for Singleton logic}
+
+Logic is:
+
+\begin{itemize}
+	\item
+	The process of \textbf{deduction}
+	\item
+	About \textbf{inference} rather than the truth
+	\item
+	Wikipedia: the systematic study of the
+	\href{https://en.wikipedia.org/wiki/Logical_form}{form} of
+	\href{https://en.wikipedia.org/wiki/Validity_(logic)}{valid}
+	\href{https://en.wikipedia.org/wiki/Inference}{inference}, and the
+	most general laws of \href{https://en.wikipedia.org/wiki/Truth}{truth}
+	\item
+	A rapper according to
+	\href{https://en.wikipedia.org/wiki/Logic_(musician)}{Wikipedia}
+\end{itemize}
+
+\subsection{Form and inference rules}
+
+A sequent has following form: \[
+\underbrace{A}_{\text{Antecedent}} \vdash \underbrace{B}_{\text{succedent}}
+\] Where the antecedent contains the assumption, and succedent contains
+the ``conclusion''. In the case of the \emph{singleton} logic, both
+\(A\) and \(B\) must be a singleton, i.e.~exactly one antecedent and one succedent (and they should both be propositions). The \(\vdash\) symbol should be read as ``entails''.
+
+\subsubsection{Connectors}
+
+We use the ``\(\&\)'' for conjunction (and) and the ``\(\oplus\)'' for
+disjunction (simple logical or, not to be confused with exclusive or).
+
+\subsubsection{Inference rules}
+The fist rule we introduce is the states that we can derive that \(A\) entails \(A\) without needing anything. 
+\[
+\infer[\textsc{id}_A]{A \vdash A}{}
+\]
+
+The second rule we introduce is the \(\textsc{cut}\) rule. It encodes the transitivity of entailment. To derive \(C\) from \(A\) (that is \(A \vdash C\)) we first derive \(A \vdash B\) and \(B \vdash C\) and then we conclude \(A \vdash C\). One could informally say that ``\(B\) is a lemma''.
+
+\[
+\infer[\textsc{cut}_B]
+{A \vdash C}{A \vdash B & B \vdash C}
+\]
+
+
+\paragraph{Connectors.} So far the propositions in our . Let's introduce some connectors. Each connector will have a "left", introducing.One of the most basic connectors is the "or" connector. We will write it as \(\oplus\) here\footnote{The \(\oplus\) is simple or, and should not be confused with the exclusive or operator}.
+
 
 \section{Cut-Elimination}
 
