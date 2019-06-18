@@ -384,15 +384,88 @@ Using constructive proofs, we shall come up with the proof. We shall assume all 
 
 Case 1:
 
-% \begin{prooftree}
-%      \AxiomC{$A \vdash A$}
-%      \dashedLine
-%      \UnaryInfC{$\Gamma \vdash A \rightarrow B$}
-% \end{prooftree}
-% \[
-% \infer[\textsc{cut}]{A \triangleright C}{\infer[\textsc{ID}]{A \triangleright A}{}}
-% \]
+\begin{prooftree}
 
+  \AxiomC{}
+  \RightLabel{\scriptsize{ID}}
+  \UnaryInfC{$A \vdash A$}
+    \AxiomC{$ \mathcal{E} $}
+    \noLine
+    \UnaryInfC{$A \triangleright C$}
+  \RightLabel{\scriptsize{cut}}
+  \dashedLine
+  \BinaryInfC{$A \triangleright C$}
+\end{prooftree}
+
+
+Case 2:
+\begin{prooftree}
+  \AxiomC{$ \mathcal{D} $}
+  \noLine
+  \UnaryInfC{$ A \triangleright B $}
+    \RightLabel{$\scriptsize{\oplus R_1}$}
+    \UnaryInfC{$ A \triangleright B \oplus C $}
+  \AxiomC{$ \mathcal{E} $}
+  \noLine
+  \UnaryInfC{$ B \triangleright D $}
+  \AxiomC{$ \mathcal{F} $}
+  \noLine
+  \UnaryInfC{$ C \triangleright D $}
+  \RightLabel{$\scriptsize{\oplus L^{\triangleright}}$}
+  \BinaryInfC{$ B \oplus C \triangleright D $}
+  \RightLabel{\scriptsize{cut}}
+  \dashedLine
+  \BinaryInfC{$A \triangleright D$}
+\end{prooftree}
+
+Constructing:
+
+\begin{prooftree}
+\AxiomC{$ \mathcal{D} $}
+\noLine
+\UnaryInfC{$ A \triangleright B $}
+\AxiomC{$ \mathcal{E} $}
+\noLine
+\UnaryInfC{$ B \triangleright D $}
+\RightLabel{\scriptsize{I.H.}}
+\dashedLine
+\BinaryInfC{$A \triangleright D$}
+
+\end{prooftree}
+
+In the cases above, either the cut disappear or we get smaller pieces in the proof.
+
+Case 3:
+
+\begin{prooftree}
+\AxiomC{$ \mathcal{D} $}
+\noLine
+\UnaryInfC{$ A \triangleright D $}
+\RightLabel{\scriptsize{$ \& L^{\triangleright} $}}
+\UnaryInfC{$ A \& B \triangleright D $}
+\AxiomC{$ \mathcal{E} $}
+\noLine
+\UnaryInfC{$ C \triangleright D $}
+\dashedLine
+\BinaryInfC{$A \& B \triangleright D$}
+\end{prooftree}
+
+Constructing:
+
+\begin{prooftree}
+\AxiomC{$ \mathcal{D} $}
+\noLine
+\UnaryInfC{$ A \triangleright C $}
+\AxiomC{$ \mathcal{E} $}
+\noLine
+\UnaryInfC{$ C \triangleright D $}
+\dashedLine
+\BinaryInfC{$A \triangleright D$}
+\RightLabel{\scriptsize{$ \& L^{\triangleright} $}}
+\UnaryInfC{$A \& B \triangleright D$}
+\end{prooftree}
+
+The case above is slightly trickier and may be referred as "simultaneous induction".
 
 
 
