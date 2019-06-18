@@ -1,0 +1,483 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% University/School Laboratory Report
+% LaTeX Template
+% Version 3.1 (25/3/14)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Linux and Unix Users Group at Virginia Tech Wiki 
+% (https://vtluug.org/wiki/Example_LaTeX_chem_lab_report)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+% PACKAGES AND DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass{article}
+
+\usepackage[version=3]{mhchem} % Package for chemical equation typesetting
+\usepackage{siunitx} % Provides the \SI{}{} and \si{} command for typesetting SI units
+\usepackage{graphicx} % Required for the inclusion of images
+\usepackage{natbib} % Required to change bibliography style to APA
+\usepackage{amsmath} % Required for some math elements 
+
+
+
+\usepackage{proof}
+\setlength{\inferLineSkip}{4pt}
+
+\usepackage{hyperref}
+\usepackage{dashrule}
+
+\usepackage{bussproofs}
+
+
+
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs
+
+\renewcommand{\labelenumi}{\alph{enumi}.} % Make numbering in the enumerate environment by letter rather than number (e.g. section 6)
+
+%\usepackage{times} % Uncomment to use the Times New Roman font
+
+%----------------------------------------------------------------------------------------
+% DOCUMENT INFORMATION
+%----------------------------------------------------------------------------------------
+
+\title{Session-Typed Concurrent Programming \\ Frank Pfenning \\ OPLSS 2019} % Title
+
+\author{John \textsc{Smith}} % Author name
+
+
+
+\begin{document}
+
+\maketitle % Insert the title, author and date
+
+\begin{center}
+\begin{tabular}{l r}
+Date Performed: & June 17th 2019 \\ % Date the experiment was performed
+Students: & J.W.N. Paulus  \\
+& R. Gurdeep Singh \\ % Partner names
+& H. C. A. Tavante \\
+Instructor: & Professor Smith % Instructor/supervisor
+\end{tabular}
+\end{center}
+
+% If you wish to include an abstract, uncomment the lines below
+% \begin{abstract}
+% Abstract text
+% \end{abstract}
+
+%----------------------------------------------------------------------------------------
+% SECTION 1
+%----------------------------------------------------------------------------------------
+
+
+
+\subsection*{Motivation and intro}
+
+There are two ways to look at a program. From an operational standpoint
+and form a logical standpoint. Let us look at an example program the
+\emph{presumably} gets the smallest element form \emph{presumably} a
+list.
+
+\textbf{Operational reasoning}: \emph{How} a program works.
+
+\begin{verbatim}
+sort(A)
+x = A[0]
+\end{verbatim}
+
+Here \texttt{sort} \emph{presumably} sorts the list \texttt{A} inplace.
+We assume here that \texttt{A} is a list because we use the
+\texttt{{[}{]}} operator on it to \emph{presumably} fetch the first
+element of the sorted list.
+
+\textbf{Logical reasoning}: \emph{What} does the program do?\\
+
+\verb|hd |\(\circ\)\verb| sort| \\
+
+Here we use function composition \(\circ\) to capture that we sort the
+list and then take the first element. Here, \texttt{hd} is a function
+that takes the first element of something, and \texttt{sort} is a
+function that sorts its input and returns it. Note that we do not
+specify how \texttt{sort} or \texttt{hd} is implemented. And it from a
+logical reasoning point of view, we don't care.
+
+\textbf{Designing abstractions}
+
+When we design abstractions we aim to capture some computational
+phenomenon such that:
+
+\begin{enumerate}
+	\item
+	We can reason about it operationally
+	\item
+	We can reason about it logically
+	\item (1) and (2) are coherent
+\end{enumerate}
+
+\section{Lecture 1: Sequent Calculus for Singleton logic}
+
+Logic is:
+
+\begin{itemize}
+	\item
+	The process of \textbf{deduction}
+	\item
+	About what you can \textbf{infer} from some axioms rather then what you know as truth.
+	\item
+	Wikipedia: the systematic study of the
+	\href{https://en.wikipedia.org/wiki/Logical_form}{form} of
+	\href{https://en.wikipedia.org/wiki/Validity_(logic)}{valid}
+	\href{https://en.wikipedia.org/wiki/Inference}{inference}, and the
+	most general laws of \href{https://en.wikipedia.org/wiki/Truth}{truth}
+	\item
+	A rapper according to
+	\href{https://en.wikipedia.org/wiki/Logic_(musician)}{Wikipedia}
+\end{itemize}
+
+\subsection{Form and inference rules}
+
+
+A sequent has following form: \[
+\underbrace{A}_{\text{Antecedent or Assumption}} \vdash \underbrace{B}_{\text{succedent}}
+\] Where the antecedent contains the assumption, and succedent contains
+the ``conclusion''. In the case of the \emph{singleton} logic, both
+\(A\) and \(B\) must be a singleton, i.e.~exactly one antecedent and one succedent (and they should both be propositions). The \(\vdash\) symbol should be read as ``entails''.
+
+\subsubsection{Connectors}
+
+We use the ``\(\&\)'' for conjunction (and) and the ``\(\oplus\)'' for
+disjunction (simple logical or, not to be confused with exclusive or).
+
+\subsubsection{Base inference rules}
+The fist rule we introduce is the states that we can derive that \(A\) entails \(A\) without needing anything. 
+\[
+\infer[\textsc{id}_A]{A \vdash A}{}
+\]
+
+The second rule we introduce is the \(\textsc{cut}\) rule. It encodes the transitivity of entailment. To derive \(C\) from \(A\) (that is \(A \vdash C\)) we first derive \(A \vdash B\) and \(B \vdash C\) and then we conclude \(A \vdash C\). One could informally say that ``\(B\) is a lemma''.
+
+\[
+\infer[\textsc{cut}_B]
+{A \vdash C}{A \vdash B & B \vdash C}
+\]
+
+
+\subsubsection{Connectors.} 
+So far the propositions in our . Let's introduce some connectors. Each 
+
+\paragraph{Disjunction / or operator \(\oplus\)}
+One of the most basic connectors is the ``or'' connector. We will write it as \(\oplus\) here\footnote{The \(\oplus\) is simple or, and should not be confused with the exclusive or operator}. Its rules are:
+
+\[
+\infer[\oplus\textsc{l}]
+{A \oplus B \vdash C}{A \vdash C & B \vdash C}
+\qquad
+\infer[\oplus\textsc{r}_1]
+{A \vdash B \oplus C}{A \vdash B}
+\qquad
+\infer[\oplus\textsc{r}_2]
+{A \vdash B \oplus C}{A \vdash C}
+\]
+
+
+
+Assume made a mistake when defining \( \oplus \), and we used the following for \(\oplus L\) instead:
+
+\[
+\infer[\oplus \textsc{l}?]{A \oplus B \vdash C}{A \vdash C}
+\]
+
+Our slight oversight allows us to make following derivation:
+\[
+\infer[\textsc{cut}_{A \oplus B}]
+{B \vdash A}
+{
+	\infer[\oplus R_2]
+	{B \vdash A \oplus B}
+	{
+		\infer[\textsc{id}_B]
+		{B \vdash B}
+		{}
+	}
+	&
+	\infer[\oplus L]
+	{A \oplus B \vdash A}
+	{
+		\infer[\textsc{id}_A]
+		{A \vdash A}
+		{}
+	}
+}
+\]
+
+It states that we that anything is able to entail anything, which makes no sense.
+
+\medskip
+
+With the correct rules we can prove  the commutativity of \(\oplus\) like this:
+
+\[
+\infer[{\oplus L}]
+{A \oplus B \vdash B \oplus A}
+{
+	\infer[{\oplus R_2}]
+	{A \vdash B \oplus A}
+	{
+		\infer[{ID_A}]
+		{A \vdash A}
+		{}
+	}
+	\infer[{\oplus R_1}]
+	{B \vdash B \oplus A}
+	{
+		\infer[{ID_B}]
+		{B \vdash B}
+		{}
+	}
+}
+\]
+
+
+
+\paragraph{Conjunction / and / with operator \(\&\)}
+The next connector we tackle is the and operator, denoted by \(\&\). Its rules are defined below. 
+
+\[
+\infer[{ \& R}]
+{A \& B \vdash C}
+{A \vdash B & A \vdash C}
+\qquad
+\infer[{\& L_1}]
+{A \& B \vdash C}
+{A \vdash C}
+\qquad
+\infer[{\& L_2}]
+{A \& B \vdash C}
+{B \vdash C}
+\]
+
+
+\paragraph{Things we cannot have}
+\begin{enumerate}
+	\item Implication \\
+	      The problem with implication is that to use it, we need to allow 
+	      more than one assumption in the proofs. This does not fit in our
+	      singleton logic model.
+	\item Negation \(A \vdash \neg B\)
+\end{enumerate}
+
+
+
+
+\fbox{
+	\parbox{\textwidth}{
+		\textbf{Wise words of Pfenning}:\\
+		\begin{verse}
+			I'm not interested in success, only in failure 
+		\end{verse}
+	\begin{verse}
+	I once needed to do a proof with 64 cases, you can guess which 63 I did first. The last one did not work out and I had to switch topics. 
+	\end{verse}
+	}
+}
+
+\section{Cut-Elimination}
+
+
+The cut rule is not absolutely necessary. It is possible to write proof without using it. Cut-elimination helps us to show that our logic is consistent (our logic is decidable and we can test all the possibilities).
+
+How can we eliminate a cut? For example:
+
+
+
+
+\[
+\infer[\textsc{cut}]
+{A \vdash B \oplus A }{\infer[\oplus R_1]{A \vdash A \oplus B}{\infer[\textsc{ID}]{A \vdash A}{}} \hspace{3em} \infer[\oplus L]{A \oplus B \vdash B \oplus A}{\infer[\oplus R_2]{A \vdash B \oplus A}{\infer[\textsc{ID}]{A \vdash A}{}} \hspace{1em} \infer[\oplus R_1]{B \vdash B \oplus A}{\infer[\textsc{ID}]{B \vdash B}{}}  }}
+\]
+
+
+It is possible to "push up the cut". We focus on A and split the proof in two steps:
+
+Step 1: 
+\[
+\infer[]{A \vdash B \oplus A}{\infer[\textsc{ID}]{A \vdash A}{} \hspace{2em} \infer[\oplus R_2]{A \vdash B \oplus A}{\infer[\textsc{ID}]{A \vdash A}{}}}
+\]
+
+Step 2: 
+\[
+\infer[\oplus R_2]{A \vdash B \oplus A}{\infer[\textsc{ID}]{A \vdash A}{}}
+\]
+
+We then introduce a new judgement to indicate that A entails B without cut:
+
+\[
+\; A\; \triangleright\; B\; 
+\]
+
+We will then have similar left and right rules:
+
+\[
+\infer[\oplus L^{\triangleright}]{A \oplus B \triangleright C}{A \triangleright C \hspace{1em} B \triangleright C}
+\]
+
+\[
+\infer[\oplus R_{1}^{\triangleright}]{A \triangleright B \oplus C}{A \triangleright B}
+\]
+
+\[
+\infer[\oplus R_{2}^{\triangleright}]{A \triangleright B \oplus C}{A \triangleright C}
+\]
+
+\subsubsection{Proofs by induction}
+
+We shall assume all the possible cases. 
+[TODO - complete all the possible cases; showing two]
+
+Case 1
+\[
+\infer[]{A \vdash C \hspace{1em} B \vdash C}{A \oplus B \vdash C} 
+\]
+
+By inductive hypothesis (I.H.) :
+\[
+\infer[\oplus L^\triangleright]{A \oplus B \triangleright C}{A \triangleright C \hspace{2em} B \triangleright C}
+\]
+
+Case 2
+\[
+\infer[\textsc{cut}]{A \vdash C}{A \vdash B \hspace{2em} B \vdash C}
+\]
+By inductive hypothesis (I.H.) :
+\[
+\infer[]{A \triangleright C}{A \triangleright B \hspace{2em} B \triangleright C}
+\]
+
+
+\subsubsection{Lemma: Admissibility of Cut}
+If 
+\[
+\; A\; \triangleright\; B\; 
+\] 
+and
+\[
+\; B\; \triangleright\; C\; 
+\]
+
+then
+\[
+\; A\; \triangleright\; C\; 
+\]
+
+Using constructive proofs, we shall come up with the proof. We shall assume all possible cases:
+[TODO - complete all the possible cases; showing three; 4 missing]
+
+Case 1:
+
+\begin{prooftree}
+
+  \AxiomC{}
+  \RightLabel{\scriptsize{ID}}
+  \UnaryInfC{$A \vdash A$}
+    \AxiomC{$ \mathcal{E} $}
+    \noLine
+    \UnaryInfC{$A \triangleright C$}
+  \RightLabel{\scriptsize{cut}}
+  \dashedLine
+  \BinaryInfC{$A \triangleright C$}
+\end{prooftree}
+
+
+Case 2:
+\begin{prooftree}
+  \AxiomC{$ \mathcal{D} $}
+  \noLine
+  \UnaryInfC{$ A \triangleright B $}
+    \RightLabel{$\scriptsize{\oplus R_1}$}
+    \UnaryInfC{$ A \triangleright B \oplus C $}
+  \AxiomC{$ \mathcal{E} $}
+  \noLine
+  \UnaryInfC{$ B \triangleright D $}
+  \AxiomC{$ \mathcal{F} $}
+  \noLine
+  \UnaryInfC{$ C \triangleright D $}
+  \RightLabel{$\scriptsize{\oplus L^{\triangleright}}$}
+  \BinaryInfC{$ B \oplus C \triangleright D $}
+  \RightLabel{\scriptsize{cut}}
+  \dashedLine
+  \BinaryInfC{$A \triangleright D$}
+\end{prooftree}
+
+Constructing:
+
+\begin{prooftree}
+\AxiomC{$ \mathcal{D} $}
+\noLine
+\UnaryInfC{$ A \triangleright B $}
+\AxiomC{$ \mathcal{E} $}
+\noLine
+\UnaryInfC{$ B \triangleright D $}
+\RightLabel{\scriptsize{I.H.}}
+\dashedLine
+\BinaryInfC{$A \triangleright D$}
+
+\end{prooftree}
+
+In the cases above, either the cut disappear or we get smaller pieces in the proof.
+
+Case 3:
+
+\begin{prooftree}
+\AxiomC{$ \mathcal{D} $}
+\noLine
+\UnaryInfC{$ A \triangleright D $}
+\RightLabel{\scriptsize{$ \& L^{\triangleright} $}}
+\UnaryInfC{$ A \& B \triangleright D $}
+\AxiomC{$ \mathcal{E} $}
+\noLine
+\UnaryInfC{$ C \triangleright D $}
+\dashedLine
+\BinaryInfC{$A \& B \triangleright D$}
+\end{prooftree}
+
+Constructing:
+
+\begin{prooftree}
+\AxiomC{$ \mathcal{D} $}
+\noLine
+\UnaryInfC{$ A \triangleright C $}
+\AxiomC{$ \mathcal{E} $}
+\noLine
+\UnaryInfC{$ C \triangleright D $}
+\dashedLine
+\BinaryInfC{$A \triangleright D$}
+\RightLabel{\scriptsize{$ \& L^{\triangleright} $}}
+\UnaryInfC{$A \& B \triangleright D$}
+\end{prooftree}
+
+The case above is slightly trickier and may be referred as "simultaneous induction".
+
+
+
+%----------------------------------------------------------------------------------------
+% BIBLIOGRAPHY
+%----------------------------------------------------------------------------------------
+
+\bibliographystyle{apalike}
+
+\bibliography{sample}
+
+%----------------------------------------------------------------------------------------
+
+
+\end{document}
