@@ -1,3 +1,4 @@
+% !TeX spellcheck = en_GB
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % University/School Laboratory Report
 % LaTeX Template
@@ -25,8 +26,9 @@
 \usepackage{siunitx} % Provides the \SI{}{} and \si{} command for typesetting SI units
 \usepackage{graphicx} % Required for the inclusion of images
 \usepackage{natbib} % Required to change bibliography style to APA
-\usepackage{amsmath} % Required for some math elements 
+\usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{xcolor}
 
 
 \usepackage{proof}
@@ -159,9 +161,94 @@
 
 
 	\subsection{???}
-	\subsection{???: Implementing a queue}
+	\subsection{Implementing a queue}
+	We will implement a queue in linear logic. Professor Pfenning says that he wants to do this in an object oriented way. 
+	
+	\subsubsection{Type}
+	
+	Our queue object will feature an enqueue method (\(enQ\)) and a dequeue (\(deQ\)) method. We start by defining the type of the queue. Because the user of the queue determines how it is used, the type will start with an external choice (\(\&\)). When an enqueue is requested, we ``provide to read on a channel of type a and then return to being a queue'' (\(A \multimap queue_A\)). For the dequeue there are two options. 
+	\begin{itemize}
+		\item The queue is either empty (\(none\)). In this case, we terminate the queue by ``returning'' type $1$.
+		\item The queue contains data (\(some\)) so we can return it. We will send an A and become a queue again (\(A \otimes queue_A\)).
+	\end{itemize}
+	Depending on its state, the queue internally (\(\oplus\)) decides what to return. We can thus write the following type \(queue_A\) for a queue with elements of type \(A\):
+	
+	\begin{align*}
+		queue_A = \&\lbrace &enQ : A \multimap queue_A \\
+		              &deQ : \oplus \lbrace  none:1 , \quad some: A \otimes queue_A \rbrace
+		\rbrace
+	\end{align*}
+	
+	\paragraph{A note on destruction} In the foregoing type, we used type \(1\) when a dequeue was requested on an empty queue. This ensures that the queue terminates and gets out of the way. A downside of this is that once we popped all elements, we cannot use the queue any longer\footnote{because in linear types everything must be exactly one time}. We could also have chosen to let the none return \(queue_A\), to dealocate the queue we would then need an additional \(destruct\) method/message. But this more tricky. The destruct operation must ``use up'' all elements in the queue at that moment and then return with type \(1\). In our setup we take the opportunity to terminate the queue once it is empty. 
 	
 	
+	\subsubsection{Implementation}
+	
+	Our queue effectively has two behaviours, an empty-behaviour and a non-empty behaviour.
+	Figure~\ref{fig:drawing-processes} visualizes the structure of the queue process. There is a process that handles the empty queue, 
+	and there is an \(elem\) process for each element in the queue. Both kinds of processes accept the queue interface.
+	Each of the \(elem\) processes have an ``input'' of type \(A\) that contains the value they hold. To add a new value the \(empty\) node will be replaced with an \(elem\) node that has (a new) \(empty\) as next process.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.7\linewidth]{pictures/jun-19/drawing-processes}
+		\caption{Visualization of the processes (circles) involved in implementing a queue}
+		\label{fig:drawing-processes}
+	\end{figure}
+	
+	
+	The type of \(elem\) reflects that it uses a stored value \(x\) of type \(A\) and a ``tail'' queue \(t\), its interface it that of \(queue_A\). So, we have:
+	\[ x:A, t:queue_A \vdash elem :: (q:queue_A) \]
+	
+	The implementation is shown below, the blue text at the end of each line indicates the type we have at the moment. 
+	\begin{align*}
+		q \leftarrow elem \leftarrow t,x = \textsc{case } q 
+		&(enQ \Rightarrow 
+		&y \leftarrow \textsc{recv } q; 
+		&& {\color{blue} (x:A, t:queue_A \vdash q:A \multimap queue_A)}\\
+		&                 &t.enQ;  
+		&& {\color{blue}\qquad (x:A,t:queue_A,y:A\vdash q:queue_A)}\\
+		&                 &\textsc{send }t,y;  
+		&& {\color{blue}(x:A,y:A,t:A \multimap queue_A\vdash q:queue_A)}\\
+		&                 & q \leftarrow elem \leftarrow t,x
+		&& {\color{blue}(x:A,t:queue_A\vdash q:queue_A)}\\[1.5em]
+		&| deQ \Rightarrow 
+		& q.some; 
+		&& {\color{blue} (x:A, t:queue_A \vdash q:A \otimes queue_A)}\\
+		&& \textsc{send }q,x ; 
+		&& {\color{blue} (x:A, t:queue_A \vdash q:queue_A)}\\
+		&& q \leftarrow t)
+		&& {\color{blue} (t:queue_A \vdash q:queue_A)}
+		\end{align*}
+		
+		
+	Empty has the following type
+	\[ \vdash elem :: (q:queue_A) \]
+
+	The implementation is shown below again:
+		\begin{align*}
+	q \leftarrow empty = \textsc{case } q 
+	&(enQ \Rightarrow 
+	&y \leftarrow \textsc{recv } q; 
+	&& {\color{blue} (\vdash q:A \multimap queue_A)}\\
+	&                 &e \leftarrow empty;  
+	&& {\color{blue}\qquad (y:A\vdash q:queue_A)}\\
+	&                 & q \leftarrow elem \leftarrow e,y
+	&& {\color{blue}(x:A,e:queue_A\vdash q:queue_A)}\\[1.5em]
+	&| deQ \Rightarrow 
+	& q.none; 
+	&& \\
+	&& \textsc{close }q 
+	&& {\color{blue} (\vdash q:1)}
+	\end{align*}
+	
+	
+	\subsubsection{Other related advances}
+	\begin{itemize}
+		\item Shared memeory instead of message passing
+		\item parallel complexity $\longrightarrow$ temporal logic (ICFP'18)
+		\item sequential complexity
+	\end{itemize}
 	
 	
 	%----------------------------------------------------------------------------------------
