@@ -26,7 +26,7 @@
 \usepackage{graphicx} % Required for the inclusion of images
 \usepackage{natbib} % Required to change bibliography style to APA
 \usepackage{amsmath} % Required for some math elements 
-
+\usepackage{amssymb}
 
 
 \usepackage{proof}
@@ -56,89 +56,211 @@
 
 
 \begin{document}
-
-\maketitle % Insert the title, author and date
-
-\begin{center}
-\begin{tabular}{l r}
-Date Performed: & June 18th 2019 \\ % Date the experiment was performed
-Students: & J.W.N. Paulus  \\
-& R. Gurdeep Singh \\ % Partner names
-& H. C. A. Tavante
-\end{tabular}
-\end{center}
-
-% If you wish to include an abstract, uncomment the lines below
-% \begin{abstract}
-% Abstract text
-% \end{abstract}
-
-%----------------------------------------------------------------------------------------
-% SECTION 1
-%----------------------------------------------------------------------------------------
-
-\section{A counter}
-
-We shall implement a counter with the following:
-
-\[
-\; bin\; =\; \oplus\; \{ b_0: bin, b_1:bin, e:\alpha \}\; 
-\]
-
-\[
-\; bin\; \vdash\; succ\; bin\; 
-\]
-
-\begin{equation}
-\begin{split}
-succ = caseL( b_0 \Rightarrow R . b_1; \leftrightarrow \\
-            | b_1 \Rightarrow R . b_0; succ \\
-            | e \Rightarrow R . b_1; R . e; \leftrightarrow )
-\end{split}
-\end{equation}
-
-\begin{equation}
-\begin{split}
-ctr = \& \{ inc:ctr, reset:ctr, val:bin \}
-\end{split}
-\end{equation}
-
-\[
-\; bin\; \vdash\; counter:ctr\; 
-\]
-
-
-\begin{equation}
-\begin{split}
-counter = caseR( inc \Rightarrow succ \overset{bin}{\vert} counter \\
-              | reset \Rightarrow delete \overset{bin}{\vert} counter \\
-              | val \Rightarrow \leftrightarrow )
-\end{split}
-\end{equation}
-
-For delete:
-
-\[
-\; bin\; \vdash\; delete:bin\; 
-\]
-
-\begin{equation}
-\begin{split}
-delete = caseL( b_0 \Rightarrow delete \\
-              | b_1 \Rightarrow delete \\
-              | e \Rightarrow R . e; \leftrightarrow )
-\end{split}
-\end{equation}
-
-%----------------------------------------------------------------------------------------
-% BIBLIOGRAPHY
-%----------------------------------------------------------------------------------------
-
-\bibliographystyle{apalike}
-
-\bibliography{sample}
-
-%----------------------------------------------------------------------------------------
-
-
+	
+	\maketitle % Insert the title, author and date
+	
+	\begin{center}
+		\begin{tabular}{l r}
+			Date Performed: & June 18th 2019 \\ % Date the experiment was performed
+			Students: & J.W.N. Paulus  \\
+			& R. Gurdeep Singh \\ % Partner names
+			& H. C. A. Tavante
+		\end{tabular}
+	\end{center}
+	
+	% If you wish to include an abstract, uncomment the lines below
+	% \begin{abstract}
+	% Abstract text
+	% \end{abstract}
+	
+	%----------------------------------------------------------------------------------------
+	% SECTION 1
+	%----------------------------------------------------------------------------------------
+	\setcounter{section}{2} % hack to have correct numbers
+	\section{Lecture 3: From Singleton to linear logic}
+	\subsection{A counter}
+	
+	We shall implement a counter with the following:
+	
+	\[
+	\; bin\; =\; \oplus\; \{ b_0: bin, b_1:bin, e:\alpha \}\; 
+	\]
+	
+	\[
+	\; bin\; \vdash\; succ\; bin\; 
+	\]
+	
+	\begin{align}
+	succ = \textsc{caseL}&( b_0 \Rightarrow R . b_1; \leftrightarrow \\
+	&| b_1 \Rightarrow R . b_0; succ \\
+	&| e \Rightarrow R . b_1; R . e; \leftrightarrow )
+	\end{align}
+	
+	\begin{equation}
+	\begin{split}
+	ctr = \& \{ inc:ctr, reset:ctr, val:bin \}
+	\end{split}
+	\end{equation}
+	
+	\[
+	\; bin\; \vdash\; counter:ctr\; 
+	\]
+	
+	
+	\begin{align*}
+	counter = \textsc{caseR}&( inc \Rightarrow succ \overset{bin}{\vert} counter \\
+	&| reset \Rightarrow delete \overset{bin}{\vert} counter \\
+	&| val \Rightarrow \leftrightarrow )
+	\end{align*}
+	
+	For delete:
+	
+	\[
+	\; bin\; \vdash\; delete:bin\; 
+	\]
+	
+	\begin{align*}
+	delete = caseL&( b_0 \Rightarrow delete \\
+	&| b_1 \Rightarrow delete \\
+	&| e \Rightarrow R . e; \leftrightarrow )
+	\end{align*}
+	
+	\subsection{Turing machine}
+	
+	To show that the system at hand is Turing complete, we emulate a Turing machine (TM) (\href{https://en.wikipedia.org/wiki/Turing_machine}{Wikipeda}). 
+	
+	A Turing machine is a theoretical device with and infinite tape as memory. A head read and writes to this tape and can travel \textsc{left} or \textsc{right}. The movement and actions of the head are encoded in a so called transition function \(\delta\). 
+	
+	The transition function \(\delta\) is has following form:
+	
+	\[
+	\delta(
+	\underbrace{q}_{\text{current state}},
+	\underbrace{a}_{\text{current tape data}}) =  (
+	\underbrace{b}_{\text{new tape contents}}, 
+	\underbrace{\begin{array}{c} \textsc{left}\\ \textsc{right} \end{array}}_{\text{movement}} ,
+	\underbrace{p}_{\text{next state}}
+	)
+	\]
+	
+	We will represent each state of our TM as a process that has tape data left and right of it. That is, the state is encoded as sitting in between to cells of the tape. For clarity, we give each state a name with a triangle ($\blacktriangleleft$ or $\blacktriangleright$) that indicates at which location on the tape the head in ``looking''.
+	
+	The states of our Turing machine will be consuming data on the tape.
+	Therefore, the tape must be emitting data, or in type terms, the tape should have an external choice type (\(\oplus\)). The tape left and right of the head should emit data in opposite directions. The tape data should be coming towards the processes. In our pictures we indicate the direction that tape content is being emitted in with an arrow. Let \(\lbrace a, b, \dots \rbrace\) be the alphabet of the tape. The type of the tape left of the head is given by \(tape\), the content on the right has type \(etap\):
+	
+	\[
+	tape = \oplus\{a:tape, b:tape, \dots\} 
+	\qquad
+	epat = \oplus\{a:tape, b:tape, \dots\}
+	\]
+	
+	For a state $q$ of the Turing machine we wish to implement, we have two states in our logical system. One where the state ``looks'' left (\(\blacktriangleleft q\)) and one where the state ``looks'' right  (\( q \blacktriangleright\)).
+	
+	\begin{align*}
+	tape \vdash \blacktriangleleft q : epat \\
+	tape \vdash q \blacktriangleright : epat 
+	\end{align*}
+	
+	
+	To implement the TMs transition function, we need to define the above two processes for each state \(q\) in the TM. These processes should take into account the value of \(\delta(q,\cdot)\).  
+	
+	\begin{enumerate}
+		\item For left moving rules (\(\delta(q,a) = (b, \textsc{left}, p)\)) we have that: 
+		\begin{itemize}
+			% LEFT: <q
+			\item \fbox{\begin{tabular}{r|c|c|l}
+					$\dots$ & $\overrightarrow{a}$ & $\blacktriangleleft q$ & $\dots$
+			\end{tabular}} must become \fbox{\begin{tabular}{r|c|c|l}
+					$\dots$ & $\blacktriangleleft p$ & $\overleftarrow{b}$ & $\dots$
+			\end{tabular}} 
+			\begin{align*}
+			tape \vdash &\blacktriangleleft q : epat  \\
+			&\blacktriangleleft q = \textsc{caseL}( a \Rightarrow \blacktriangleleft p \vert (Lb;\leftrightarrow) \quad, b \Rightarrow \dots )
+			\end{align*}
+			
+			% LEFT: q>
+			\item \fbox{\begin{tabular}{r|c|c|l}
+					$\dots$ & $q \blacktriangleright$ & $\overleftarrow{a}$  & $\dots$
+			\end{tabular}} must become \fbox{\begin{tabular}{r|c|c|l}
+					$\dots$ & $\blacktriangleleft p$ & $\overleftarrow{b}$ & $\dots$
+			\end{tabular}} 
+			\begin{align*}
+			tape \vdash &q \blacktriangleright : epat \\
+			&q \blacktriangleright = \textsc{caseR}( a \Rightarrow \blacktriangleleft p \vert (Lb;\leftrightarrow) \quad, b \Rightarrow \dots ) 
+			\end{align*}
+		\end{itemize}
+		\item For right moving rules (\(\delta(q,a) = (b, \textsc{right}, p)\)) we have that:
+		\begin{itemize}
+			% RIGHT: <q
+			\item \fbox{\begin{tabular}{r|c|c|l}
+					$\dots$ & $\overrightarrow{a}$ & $\blacktriangleleft q$ & $\dots$
+			\end{tabular}} must become \fbox{\begin{tabular}{r|c|c|l}
+					$\dots$ &$\overrightarrow{b}$ & $q \blacktriangleright$ & $\dots$
+			\end{tabular}} 
+			\begin{align*}
+			tape \vdash &\blacktriangleleft q : epat \\
+			&\blacktriangleleft q = \textsc{caseL}( a \Rightarrow (Rb;\leftrightarrow) \vert q \blacktriangleright \quad, b \Rightarrow \dots ) 
+			\end{align*}
+			
+			% RIGHT: q>
+			\item \fbox{\begin{tabular}{r|c|c|l}
+					$\dots$ & $\overrightarrow{a}$ & $q \blacktriangleright$ & $\dots$
+			\end{tabular}} must become \fbox{\begin{tabular}{r|c|c|l}
+					$\dots$ &$\overrightarrow{b}$ & $q \blacktriangleright$ & $\dots$
+			\end{tabular}} 
+			\begin{align*}
+			tape \vdash &\blacktriangleleft q : epat \\
+			&\blacktriangleleft q = \textsc{caseR}( a \Rightarrow (Rb;\leftrightarrow) \vert q \blacktriangleright \quad, b \Rightarrow \dots ) 
+			\end{align*}
+		\end{itemize}
+	\end{enumerate}
+	
+	
+	With this we have a translation scheme to translate any TM to our model.
+	If \(s\) is the start state of the TM, we can use \(s \blacktriangleright\) to emulate the TM.
+	(One must still proof that the executions will yield the same result...)
+	
+	
+	
+	\begin{figure}
+		\centering
+		{\footnotesize Classical TM representation}
+		\fbox{
+			\begin{tabular}{c|c|c|c|c|c|c|c|c|c|c|cl}
+				\multicolumn{5}{c}{}&\multicolumn{1}{c}{$q$}\\ 
+				\multicolumn{5}{c}{}&\multicolumn{1}{c}{$\downarrow$}\\ 
+				$\cdots$ & a & a & a & a &  \(a_*\) & a & a & a & a & a &  $\cdots$ &  infinite tape \\ 
+			\end{tabular} 
+		}
+		
+		\vspace{3em}
+		
+		
+		{\footnotesize Our TM representation}
+		\fbox{
+			\begin{tabular}{cccccc|c|cccccl}
+				
+				\multicolumn{6}{c}{}&\multicolumn{1}{c}{current}\\ 
+				\multicolumn{6}{l}{tape content before}&
+				\multicolumn{1}{c}{state}&
+				\multicolumn{6}{r}{tape content after}\\ 
+				$\cdots$ & $\overrightarrow{a}$  &  $\overrightarrow{a}$ & $\overrightarrow{a}$  & $\overrightarrow{a}$   &  $\overrightarrow{a_*}$ & $\blacktriangleleft q$ & $\overleftarrow{a}$ & $\overleftarrow{a}$ & $\overleftarrow{a}$ & $\overleftarrow{a}$ &  $\cdots$ & \\ 
+			\end{tabular} 
+		}
+		\caption{\textit{Top}: A classical TM that is in state \(q\) and has \(a_*\) on the tape. \textit{Bottom}:Visualization of a process ``$\blacktriangleleft q$'' on a tape. The Turing machines current cell under the head contains \(a_*\)}
+	\end{figure}
+	
+	
+	
+	%----------------------------------------------------------------------------------------
+	% BIBLIOGRAPHY
+	%----------------------------------------------------------------------------------------
+	
+	\bibliographystyle{apalike}
+	
+	\bibliography{sample}
+	
+	%----------------------------------------------------------------------------------------
+	
+	
 \end{document}
