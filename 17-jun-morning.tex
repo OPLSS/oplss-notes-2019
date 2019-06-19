@@ -289,6 +289,196 @@ The next connector we tackle is the and operator, denoted by \(\&\). Its rules a
 	}
 }
 
+\subsection{Examples of Proofs}
+
+It is typical to expect some form of distribution law between \(\& \) and \(\oplus\). Our goal is to prove the following
+\[(A \& B) \oplus (A \& C) \vdash \dashv A \& (B \oplus C) \text{ and } (A \& B) \oplus ( A \& C ) \vdash \dashv A \& (B \oplus C)\]
+
+We are only able to prove in one direction of the entailment at a time as we have no concept that \( A \vdash B 	\Rightarrow B \vdash A\). So we will first start with \((A \& B) \oplus (A \& C) \vdash A \& (B \oplus C)\). It is sufficient to show that all branches deviation consist of axioms in order to prove this.
+
+\[
+\infer[{\& R}]
+    { (A \& B) \oplus (A \& C) \vdash A \& (B \oplus C) }
+    {
+    \infer[{\oplus L}]
+        {(A \& B) \oplus (A \& C) \vdash A }
+        {
+        \infer[{ \& L_1}]
+            {A \& B  \vdash A }
+            {
+            \infer[{ID_A}]
+                {A \vdash A}
+                {}
+            }
+        &
+        \infer[{ \& L_1}]
+            { A \& C \vdash A}
+            {
+            \infer[{ ID_A}]
+                {A \vdash A}
+                {}
+            }
+        }
+    &
+    \infer[{\oplus L}]
+        {(A \& B) \oplus (A \& C) \vdash  B \oplus C }
+        {
+        \infer[{\& L_2}]
+            {A \& B \vdash  B \oplus C }
+            {
+            \infer[{\oplus R_1}]
+                { B \vdash  B \oplus C }
+                {
+                \infer[{ID_B}]
+                    {B \vdash B}
+                    {}
+                }
+            }
+        &
+        \infer[{\& L_2}]
+            { A \& C \vdash  B \oplus C}
+            {
+            \infer[{\oplus R_2}]
+                { C \vdash  B \oplus C}
+                {
+                \infer[{ID_C}]
+                    {C \vdash  C}
+                    {}
+                }
+            }
+        }
+    }
+\]
+    
+Next we will attempt to prove \((A \& B) \oplus (A \& C) \dashv A \& (B \oplus C)\). Using the inference rules yields the following
+
+\[
+\infer[{\oplus R_1}]
+    {A \& (B \oplus C) \vdash \dashv (A \& B) \oplus ( A \& C ) }
+    {
+    \infer[{\& R}]
+        {A \& (B \oplus C) \vdash A \& B }
+        {
+        \infer[{\& L_1}]
+            {A \& (B \oplus C) \vdash A}
+            {
+            \infer[{ID_A}]
+                {A \vdash A}
+                {}
+            }
+        &
+        \infer[{\& L_2}]
+            { A \& (B \oplus C) \vdash  B}
+            {
+            \infer[{\oplus L}]
+                {B \oplus C \vdash  B}
+                {
+                \infer[{ID_B}]
+                    {B \vdash B}
+                    {}
+                &
+                \infer[{}]
+                {C \vdash B}
+                {(1)}
+                }
+            }
+        }
+    }
+\]
+Notice however we have that for some (1)  we can infer \(C \vdash B\). This may lead you to believe that no inference rule can be made however that is not the case as you are always able to create some new \(M\) and perform the CUT rule.
+
+\[
+\infer[{CUT_M}]
+{C \vdash B}
+{C \vdash M & M \vdash B}
+\]
+now let us consider three cases. \(M = C , M = B , M \neq B \text{ or } C\). In the first case we get \(ID_C\) on the left branch and exactly what we started with on the right so we are able to recursively call cut. In the second case we have the same situation however we \(ID_B\) is on the right branch. In the finally case we are able to generate a new \(M_1\) and \(M_2\) and call CUT on both the left and the right.
+
+Similarly for \((A \& B) \oplus ( A \& C ) \vdash \dashv A \& (B \oplus C)\)
+
+We are first able to prove \((A \& B) \oplus ( A \& C ) \vdash A \& (B \oplus C)\) by :
+
+\[
+\infer[{ \oplus L}]
+    {(A \& B) \oplus ( A \& C ) \vdash A \& (B \oplus C)}
+    {
+    \infer[{\& R}]
+        { A \& B  \vdash A \& (B \oplus C)}
+        {
+        \infer[{\& L_1}]
+            { A \& B \vdash A }
+            {
+            \infer[{ID_A}]
+                {A \vdash A}
+                {}
+            }
+        &
+        \infer[{\& L_2}]
+            { A \& B \vdash B \oplus C}
+            {
+            \infer[{\oplus R_1}]
+                { B \vdash B \oplus C}
+                {
+                \infer[{ID_B}]
+                    {B \vdash B}
+                    {}
+                }
+            }
+        }
+    &
+    \infer[{\& R}]
+        { A \& C  \vdash A \& (B \oplus C)}
+        {
+        \infer[{\& L_1}]
+            {A \& C  \vdash A }
+            {
+            \infer[{ID_A}]
+                {A \vdash A}
+                {}
+            }
+        &
+        \infer[{\oplus L_2}]
+            { A \& C  \vdash B \oplus C}
+            {
+            \infer[{ \& L_2}]
+                { C  \vdash B \oplus C}
+                {
+                \infer[{ID_C}]
+                    { C  \vdash  C}
+                    {}
+                }
+            }
+        }
+    }
+\]
+However we run into the same problem when we try to entail \( (A \& B) \oplus ( A \& C ) \dashv A \& (B \oplus C) \) as seen by \((2)\)
+
+\[
+\infer[{\oplus R_1}]
+    {A \oplus (B \& C) \vdash (A \& B) \oplus ( A \& C)}
+    {
+    \infer[{\oplus L}]
+        {A \oplus (B \& C) \vdash A \& B }
+        {
+        \infer[{\& R}]
+            {A \vdash A \& B}
+            {
+            \infer[{ID_A}]
+                {A \vdash A }
+                {}
+            &
+            \infer[{}]
+                {A \vdash B }
+                {(2)}
+            }
+        &
+        B \& C \vdash A \& B
+        }
+    }
+\]
+
+So what is it that we can conclude from this? We are easily able to prove what is true by applying the correct sequence of derivation rules and reaching axioms however for something that we suspect to be false we are always able to perform the cut inference rule upon it. We need some form of notation saying that if there is a derivation proving truth then we are able to write that derivation omitting the CUT rule entirely.  
+
 \section{Cut-Elimination}
 
 
@@ -466,6 +656,41 @@ Constructing:
 The case above is slightly trickier and may be referred as "simultaneous induction".
 
 
+\subsection{Example 1.2 revisited}
+
+With this new cut elimination theorem we are now able to disprove \(A \& (B \oplus C) \vdash (A \& B) \oplus (A \& C) \) by showing \(A \& (B \oplus C) \triangleright(A \& B) \oplus (A \& C) \) is not possible. Applying inference rule gives us:
+
+\infer[{\oplus R_1}]
+    {A \& (B \oplus C) \triangleright \dashv (A \& B) \oplus ( A \& C ) }
+    {
+    \infer[{\& R}]
+        {A \& (B \oplus C) \triangleright A \& B }
+        {
+        \infer[{\& L_1}]
+            {A \& (B \oplus C) \triangleright A}
+            {
+            \infer[{ID_A}]
+                {A \triangleright A}
+                {}
+            }
+        &
+        \infer[{\& L_2}]
+            { A \& (B \oplus C) \triangleright  B}
+            {
+            \infer[{\oplus L}]
+                {B \oplus C \triangleright  B}
+                {
+                \infer[{ID_B}]
+                    {B \triangleright B}
+                    {}
+                &
+                {C \triangleright B}
+                }
+            }
+        }
+    }
+
+But by looking at the shape of the rules available we can see that the only rule applicable is \(ID\) and this is only the case when \(C = B\) but we are considering a general \(C\) and \(B\) hence we are stuck, meaning that this isn't provable and hence not true.
 
 %----------------------------------------------------------------------------------------
 % BIBLIOGRAPHY
