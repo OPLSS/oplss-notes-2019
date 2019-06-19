@@ -78,11 +78,58 @@ Students: & J.W.N. Paulus  \\
 % SECTION 1
 %----------------------------------------------------------------------------------------
 
+\section{A counter}
+
+We shall implement a counter with the following:
+
+\[
+\; bin\; =\; \oplus\; \{ b_0: bin, b_1:bin, e:\alpha \}\; 
+\]
+
+\[
+\; bin\; \vdash\; succ\; bin\; 
+\]
+
+\begin{equation}
+\begin{split}
+succ = caseL( b_0 \Rightarrow R . b_1; \leftrightarrow \\
+            | b_1 \Rightarrow R . b_0; succ \\
+            | e \Rightarrow R . b_1; R . e; \leftrightarrow )
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+ctr = \& \{ inc:ctr, reset:ctr, val:bin \}
+\end{split}
+\end{equation}
+
+\[
+\; bin\; \vdash\; counter:ctr\; 
+\]
 
 
+\begin{equation}
+\begin{split}
+counter = caseR( inc \Rightarrow succ \overset{bin}{\vert} counter \\
+              | reset \Rightarrow delete \overset{bin}{\vert} counter \\
+              | val \Rightarrow \leftrightarrow )
+\end{split}
+\end{equation}
 
+For delete:
 
+\[
+\; bin\; \vdash\; delete:bin\; 
+\]
 
+\begin{equation}
+\begin{split}
+delete = caseL( b_0 \Rightarrow delete \\
+              | b_1 \Rightarrow delete \\
+              | e \Rightarrow R . e; \leftrightarrow )
+\end{split}
+\end{equation}
 
 %----------------------------------------------------------------------------------------
 % BIBLIOGRAPHY
