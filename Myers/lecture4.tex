@@ -156,8 +156,27 @@ $h_1$ flows into assignment $h_2$ of $l_1$
 \section{HDLs}
 (Hardware description language)
 
-See slides.
+How do you build \emph{efficient} hardware that \emph{verifiably} satisfies security properties?
+Use SecVerilog = Verilog + security labels
+
+\begin{itemize}
+\item Threat model = adversary can see all public memory at every clock cycle.
+
+\item Partition cache statically
+
+\item Annotations on variables (possibly functions)
+  
+\end{itemize}
+
+\emph{Soundness:} at each clock tick, no H information leaks to a L variable.
+  
+See slides for the rest.
 
 
 
 \end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
