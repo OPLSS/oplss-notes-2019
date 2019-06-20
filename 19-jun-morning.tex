@@ -78,7 +78,86 @@
 	%----------------------------------------------------------------------------------------
 	\setcounter{section}{3} % hack to have correct numbers
 	\section{Lecture 4: Linear logic \(\otimes\) session types}
-	\subsection{???}
+	\subsection{Connectives of Linear Logic}
+
+	Judgement 
+	\[
+	\underbrace{\Gamma}_{A_1,...,A_n} \vdash A
+	\]
+
+	Id:
+
+	\[
+	\infer[\scriptsize{ID}]
+	{A \vdash A}
+	{}
+	\]
+
+	Cut-rule:
+	\[
+	\infer[\scriptsize{CUT}]
+	{\Gamma_{1}, \Gamma_{2} \vdash C}
+	{\Gamma_{1} \vdash A \hspace{2em} \Gamma_{2}, A \vdash C}
+	\]
+
+  $\oplus$ Right and Left rules (Internal choice)
+	\[
+	\infer[\oplus\scriptsize{R_1}]
+	{\Gamma \vdash A \oplus B}{\Gamma \vdash A}
+	\qquad
+	\infer[\oplus\scriptsize{R_2}]
+	{\Gamma \vdash A \oplus B}{\Gamma \vdash B}
+	\qquad
+	\infer[\oplus\scriptsize{L}]
+	{\Gamma, A \oplus B \vdash C}{\Gamma, A \vdash C \hspace{1em} \Gamma, B \vdash C}
+	\]
+
+
+	$\&$ Right and Left rules (External choice)
+
+	\[
+	\infer[\&\scriptsize{R}]
+	{\Gamma \vdash A \& B}{\Gamma \vdash A \hspace{1em} \Gamma \vdash B}
+	\qquad
+	\infer[\&\scriptsize{L_1}]
+	{\Gamma, A \& B \vdash C}{\Gamma, A \vdash C}
+	\qquad
+	\infer[\&\scriptsize{L_2}]
+	{\Gamma, A \& B \vdash C}{\Gamma, B \vdash C}
+	\]
+
+
+	$\otimes$ Right and Left rules (Tensor; dual choice)
+
+	\[
+	\infer[\otimes\scriptsize{R}]
+	{\Gamma_{1}, \Gamma_{2} \vdash A \otimes B}{\Gamma_{1} \vdash A \hspace{1em} \Gamma_{2} \vdash B}
+	\qquad
+	\infer[\otimes\scriptsize{L}]
+	{\Gamma , A \otimes B \vdash C}{\Gamma, A, B \vdash C}
+	\]
+
+	$\multimap$ Right and Left rules (Also kown as Linear implication or "Loly")
+
+	\[
+	\infer[\multimap\scriptsize{R}]
+	{\Gamma \vdash A \multimap B}{\Gamma, A \vdash B}
+	\qquad
+	\infer[\multimap\scriptsize{L}]
+	{\Gamma_{1}, \Gamma_{2}, A \multimap B \vdash C}{\Gamma_{1} \vdash A \hspace{1em} \Gamma_{2}, B \vdash C}
+	\]
+
+	No resources at all (the dot $ \bullet $ means there are no resources):
+
+	\[
+	\infer[\scriptsize{1R}]
+	{\bullet \vdash 1}{}
+	\qquad
+	\infer[\scriptsize{1L}]
+	{\Gamma, 1 \vdash C}{\Gamma \vdash C}
+	\]
+
+
 	\subsection{???}
 	\subsection{???: Implementing a queue}
 	
