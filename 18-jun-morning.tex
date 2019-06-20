@@ -249,7 +249,100 @@
 		}
 		\caption{\textit{Top}: A classical TM that is in state \(q\) and has \(a_*\) on the tape. \textit{Bottom}:Visualization of a process ``$\blacktriangleleft q$'' on a tape. The Turing machines current cell under the head contains \(a_*\)}
 	\end{figure}
-	
+\\
+\\
+There are two properties we wish to prove and these are topical properties you would find in a functional calculus.
+\\\\
+\begin{theorem}[Preservation]
+if \(A \vdash P : C\) and \(P \rightarrow Q\) then \( A \vdash Q:C \)
+\end{theorem}
+
+
+This theorem allows us to have the property that with every reduction step we are able to preserve the typing of the processes.
+\\\\
+\begin{theorem}[Progress]
+if \( A \vdash P:C \) then either:
+\begin{itemize}
+    \item \(P \rightarrow Q\)
+    \item \( P = 	\leftrightarrow\)
+    \item \( P\) communicates left or right
+\end{itemize}
+\end{theorem}
+As there is no notation of values we have to define when a process has no reductions that can take place on them. The progress rule states that if a process is well typed then a reduction can be performed or \(P\) can no longer reduce and will either be a port forwarding or be waiting to send or receive a value. 
+\\
+
+We now wish to relax our context to allow multiple assumptions
+
+\subsection{Example: Merge}
+
+We wish to describe a merging process that takes in two streams of bits and outputs the merge of these two streams. We will type this as:
+\(x : bits , y : bits \vdash merge :: z : bits\)
+
+The define this process as:
+
+\begin{equation*}
+\begin{split}
+z \leftarrow merge \leftarrow x \, y = case \, x \, ( &  b_0 \Rightarrow z.b_0 \mid z \leftarrow merge \leftarrow y \, x\\
+ & b_1 \Rightarrow z.b_1 \mid z \leftarrow merge \leftarrow y \, x ) \\
+\end{split}
+\end{equation*}
+
+\(merge\) is written as \(z \leftarrow merge \leftarrow x \, y \) because you can read \(merge\) as a function that takes inputs \(x, y\) and then send its outputs along \(z\). This merge function works by looking only at the bit that is sent along \(x\) and forwarding it along \(z\) then recursively calling itself however switching \(x\) and \(y\) meaning the next call reads the bit from \(y\)
+\\
+\\
+We must now define a new context that allows multiple assumptions. We do this recursively as 
+\[ \Gamma :: = 	\bullet \mid \Gamma , x:A \]
+Our context is now either empty or contains a channel of type \(A\) and also consists of another context.
+
+
+We must now rewrite our rules allowing us to have inputs across multiple channels. The first rule we shall rewrite is the \(\oplus R_1 \) and \(\oplus R _2\) giving a more general case for more then two choices. The type of this will be \(\oplus \{ l:A_l \}_{l \in L}\) meaning label \(l\) in a set of labels \(L\) will provide type \(A_l\)
+\[
+\infer[{\oplus R_k}]
+    {\Gamma \vdash x.k;P :: x : \oplus \{ l : A_l \} _{l \in L}}
+    {(k \in L) & \Gamma \vdash P :: x:A_k }
+\]
+
+In this rule \(x.k\) is able to provide multiple types but is is only when the decision is made on \(x\) of \(k\) that we know which type is provided. Clearly we should be able to type the selection that has been made.
+
+
+\begin{center}
+    \begin{tabular}{ c c c }
+     Type & Action & Continuation \\ 
+     \(x:\oplus \{ l: A_{l} \}_{L}\) & send \(k \in L\) & \(x:A_k\)   
+    \end{tabular}
+\end{center}
+
+\(x\) is able to provide a multitude of types. The sending of its label is when there is a synchronization deciding which type is being sent. \(x\) will then perform as the type agreed upon in the synchronization.
+
+
+\[
+\infer[{\oplus L}]
+    {\Gamma, x: \oplus \{ l : A_L\}_L \vdash case \, x \, (l \Rightarrow Q_l)_{l \in L} :: z : C }
+    {(\forall l \in L) & \Gamma, x:A_l \vdash Q_l :: z:C }
+\]
+
+As expected if you are able to make multiple choices then we must also have multiple cases. One case for each choice. When \(x\) receives a case it performs as the process that the chosen case defines. Since we do not know what label will be provided then we must be able to type every outcome.
+
+
+\[
+\infer[{CUT_x}]
+    {\Gamma_1 , \Gamma_2 \vdash ( x \leftarrow P ; Q ) :: z :c }
+    { \Gamma_1 \vdash P :: x :A & \Gamma_2 , x:A \vdash Q :: z:C }
+\]
+
+The cut rule allows processes \(P\) and \(Q\) to communicate across some channel \(x\). Process \(P\) provides along \(x\) and \(x\) receives. Hence we have two contexts, one describing the channels of \(P\) and one the channels of \(Q\). We must be able to prove that given the context for \(P\) that is is able to provide \(A\) across the connecting channel \(x\) and that given \(Q\)'s context and also the \(A\) that \(P\) provides along \(x\) it is able to consume it and provide \(c\) across \(z\)
+
+\[
+\infer[{ID}]
+    {A \vdash A}
+    {  }
+\hspace{3em}   
+\infer[{ID}]
+    { y:A \vdash x \leftarrow y :: x : A}
+    { }
+\]
+
+We finally describe how the identity works. The idea is that what ever is received across \(y\) is just sent along \(x\). We must only have \(y\) in our context at it is linear, everything must get used up. 
 	
 	
 	%----------------------------------------------------------------------------------------
