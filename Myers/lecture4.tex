@@ -1,0 +1,163 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[hyphens]{url} 
+\usepackage[breaklinks]{hyperref}
+\usepackage{amsmath,amsthm,stmaryrd,amssymb,fdsymbol}
+\usepackage{bussproofs}
+\usepackage{listings}
+
+\newcommand{\la}{^{\leftarrow}}
+\newcommand{\ra}{^{\rightarrow}}
+\newcommand{\refl}{\hourglass}
+
+\title{Security-Typed Languages \\ \Large{Lecture 4}} 
+
+\begin{document}
+
+\maketitle
+
+NI $\rightarrow$ Robust declassification (NI refines RD)
+
+Robust declassification breaks the confidentiality/integrity duality
+
+Can be restored with dual: Transparent Endorsement (TE).
+% figure 1 here
+Example: password checker
+\begin{lstlisting}[mathescape,frame=single,basicstyle=\ttfamily,language=java]
+String{H} pwd;
+ bool{H$^{\leftarrow}$} check_password(String{H$^{\rightarrow}$} guess) {
+    String{H} endorsed_guess = endorse(guess,$\rightarrow$ to H);
+    bool{H} res = (password == endorsed_guess);
+    return declassify(res,H to H${\leftarrow}$);
+}
+\end{lstlisting}
+Problem can arise when adversary manages to steer password value directly into \texttt{check\_password} function. (abusing downgrading); problem arises as password with H label can flow into H$^{\rightarrow}$. 
+
+To solve,
+
+Rule for transparent endorsement:
+\begin{prooftree}
+    \AxiomC{$\Gamma(y) \sqsubseteq l_1$}
+    \AxiomC{$ l_2 \sqsubseteq\Gamma(y) $}
+    \AxiomC{$ l_1 \sqsubseteq l_2 \sqcup \bigtriangledown (l_1 \sqcup pc) $}
+    \TrinaryInfC{$pc \vdash x := \text{endorse}(y,l_1 to l_2)$}    
+\end{prooftree}
+
+$\bigtriangledown$ (voice) maps confidentiality to corresponding integrity
+
+% figure 2 here
+RD: $\llbracket S_{11} \rrbracket \approx_L \llbracket S_{21} \rrbracket \Rightarrow \llbracket S_{12} \rrbracket \approx_L \llbracket S_{22} \rrbracket $
+
+TE: $S_{11} \approx_H S_{12} \Rightarrow S_{21} \approx_H S_{22} $
+
+RD + TE ="nonmalleable informationi flow"
+
+Where do $\bigtriangleup$ and $\bigtriangledown$ come from?
+
+FLAM (Arden et al. CSF'15)
+
+\begin{enumerate}
+    \item labels are principals
+    \item primitive principals (Alice, Bob, p, q, $\ldots$)
+    \item prinicpal projections ($p^{\leftarrow}$, integrity projection), $p^{\rightarrow}$, confidentiality)
+    \item joins and meets on principals $p \land q$ (reads as: powers of both $p$ and $q$), $p \wedge q$. $\forall p,q. p \land q \succeq p \wedge q$. (trust ordering). Least powerful principal is $\bot$; most powerful is $\top$. %see figure 3
+\end{enumerate}
+
+Normal form for principals: $A^{\leftarrow} \land B^{\rightarrow}$.
+$A,B$ are CNF expressions over primitive principals.
+
+$\bigtriangleup (A \la \land B \ra) = A \ra \land T \la$
+$\bigtriangledown (A \la \land B \ra) = B \la$
+
+Reflection: $ \refl (A \la \land B \ra) = B \la \land A \ra$
+
+if $l \not\sqsubseteq \refl l$, can't downgrade nonmalleably
+%figure 4 here
+
+\section{Hardware security}
+\begin{tabular}{|c|}
+Modern systems \\
+\hline
+app code \\
+\hline
+libraries \\ 
+\hline
+OS \\
+\hline
+ISA \\ 
+\hline
+$\mu$ architecture \\
+\end{tabular}{|c|}
+
+Correctness and security depend on having contracts between these different layers. 
+
+Classic specifications do not work (Meltdown, spectre). Contracts should capture information flow (hyperproperties)
+
+Contracts should be compositional
+
+%figure 5 here
+Mandatory vs. discretionary access control
+
+Example
+\begin{lstlisting}[mathescape]
+if h_1 then
+    h_2 := l_1 // pulls l_1 into cache
+else 
+    h_2 := l_2
+l_3 := l_1 // false if h_1 = true
+\end{lstlisting}
+
+Timing update to $l_3$ teaches value of $h_1$.
+
+Zhang/PLDI'12: ISA/M-arch contract that rules out timing channels (in addition to previously discussed leakage)
+Zagieboylo/CSF'19: detailed ISA contract for realistic ISA supporting nonmalleable downgrading
+
+Consider imperative language IMP where each command has a \emph{read label} and a \emph{write label}.
+Read label $l_r$ bounds influences on time taken by instruction
+Write label $l_w$ is a lower bound on effects instruction has on $\mu$-architecture state
+\begin{tabular}{|c|}
+\hline
+ISA
+$\quad$ register \\
+\hline
+$\mu$-arch \\
+$\quad$ cache \\
+$\quad$ TLB \\
+$\quad \ldots$ \\
+\hline
+\end{tabular}
+
+Define two types of semantics
+architecturlar semantcs (like SOS, $c,\gamma \longrightarrow c',\gamma'$)
+$\mu$-arch semantics: $c,\gamma,E,G \longrightarrow c',\gamma',E',G'$
+
+where $E$ =  the microarchitecture state, $G$ is global (wall-clock) time.
+ 
+read-label property: Given command $c_[l_r,l_w]$
+$(\forall x \in vars(c) . \gamma_1(x) = \gamma_2(x)) \land E_1 ~_{l_r} E_2) \land c_[l_r,l_w],\gamma_i,E_i,G \longrightarrow c_i,\gamma_i',E'_i,G_i)  \Rightarrow G_1 = G_2$ for $i \in 
+\{1,2\}$
+
+write-label property: $l_w \not\sqsubseteq l \land c_{[l_r,l_w]}, \gamma,E,G \longrightarrow c', \gamma',E',G' \Rightarrow E ~_l E' $
+
+Single-step noninterference
+$(\gamma_1 ~-l \gamma_2 \land E_1 ~_l E_2 \land c_{l_r,l_w},\gamma_i,E_i,G_i \longrightarrow c_i,\gamma'_i,E'_i,G_i') \Rightarrow E'_1 = E'_2$
+
+Hardware satisfying these three porperties can reason about information flow for software/hardware composition
+
+\begin{lstlisting}[mathescape]
+if h_1 then
+    h_2 := l_1[L,H] // pulls l_1 into cache
+else 
+    h_2 := l_2[L,H]
+l_3 := l_1[L,L] // false if h_1 = true
+\end{lstlisting}
+$h_1$ flows into assignment $h_2$ of $l_1$
+
+\section{HDLs}
+(Hardware description language)
+
+See slides.
+
+
+
+\end{document}
