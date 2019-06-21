@@ -1,0 +1,297 @@
+
+
+%%%% Generic manuscript mode
+\documentclass[ manuscript, review,screen, nonacm]{acmart}
+
+\usepackage{amsmath}
+\usepackage{mathpartir}
+\usepackage{syntax}
+
+\input{cmds}
+
+%%
+%% \BibTeX command to typeset BibTeX logo in the docs
+% \AtBeginDocument{%
+%   \providecommand\BibTeX{{%
+%     \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+
+\begin{document}
+
+
+\title{Resource Analysis: Lecure 1}
+
+\author{Jan Hoffmann}
+\email{jhoffmann@cmu.edu}
+
+\maketitle
+
+
+
+\section{Motivation of resource analysis} 
+How do we compare two implementations of the same function? 
+\begin{itemize}
+  \item efficiency
+  \begin{itemize}
+    \item time complexity
+    \item memory usage
+    \item power consumption
+  \end{itemize}
+  \item kinds of analysis we might be interested in
+    \begin{itemize}
+        \item worst-case analysis  
+        \item average-case analysis
+    \end{itemize} 
+  \item traditional tool: analysis of algorithms
+  \begin{itemize}
+      \item algorithms are usually defined in pseudocode, which leads to the following problems:
+      \begin{itemize}
+          \item algorithm description's relation to the actual implementation is unclear
+          \item cost model is not specified
+          \item the format of input is not specified
+          \item ...
+      \end{itemize}
+      \item Complexity is analyzed using big-O:
+    \begin{itemize}
+        \item recap: $f \in O(g)$ means $\exists n_0, c. \forall n \geq n_0. f(n)\leq cg(n)$.
+        \item some algorithms might have large constants thus are actually slow in practice
+       \item cannot distinguish algorithms with the same asymptotic behavior
+       \item no information on ``small'' inputs
+      \item  definitions are hard to generalize to multiple inputs
+     \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\section{Resource analysis}
+
+\begin{itemize}
+    \item in order to analyze programs (mathematical objects), we need
+    \begin{itemize}
+        \item syntax and static semantics
+        \item cost semantics
+    \end{itemize}
+    \item to take into account constant factors
+    \begin{itemize}
+        \item no other way but have to figure out the constants even we want to use big O eventually
+        \item want some help from proof rules, type systems, and other automation techniques to figure out the exact factors
+    \end{itemize}
+    \item bounds that come with certificates, i.e., proofs on how the bounds are obtained
+\end{itemize}
+
+
+In this short course series we focus on functional languages, worst-case bounds, and automatic bound inference.
+
+
+
+\section{A simple language}
+
+\subsection{Syntax}
+
+Types and expressions are defined as follows:
+
+\begin{grammar}
+<Types> $\tau$ ::= $\arrc{\tau_1}{\tau_2}$ // function from $\tau_1$ to $\tau_2$, written as $\tau_1 \rightarrow \tau_2$
+\alt $\unitc$
+
+<Expressions> $e$ ::= $x$ // variables, written as $x$
+\alt $\appc{e_1}{e_2}$  // function application, written as $e_1(e_2)$
+\alt $\lamc{x}{\tau}{e}$ // function with argument $x$ of type $\tau$ and body $e$, written as $\lambda(x:\tau)e$
+\alt $\trivc$   // empty expression
+\end{grammar}
+
+Values are inductively defined as follows:
+
+\begin{mathpar}
+    \inferrule{ }{ \trivc \text{ val} }
+    \and
+    \inferrule{  }{ \lam{x}{\tau}{e} \text{ val}}
+\end{mathpar}
+
+
+
+
+\subsection{ Cost semantics $I$: structural dynamics (also known as small-step semantics)}
+
+$e \mapsto e'$ means expression $e$ evaluates to $e'$ in one step.
+
+\begin{figure}[htb]
+    \begin{mathpar}
+    \inferrule{e_1 \mapsto e_1'}{e_1(e_2) \mapsto e_1'(e_2)}
+    \and
+    \inferrule{e_1 \text{ val} \\ e_2 \mapsto e_2'}{e_1(e_2) \mapsto e_1(e_2')}
+    \and
+    \inferrule{e_2 \text{ val} }{(\lambda(x:\tau)e )e_2 \mapsto [e_2/x] e}
+    \end{mathpar}
+    \caption{Structural dynamics for the simple language.}
+    \label{fig:small-step}
+\end{figure}
+
+
+
+Definition: let $e:\tau$, the evaluation cost of $e$ is $n$ if $e \mapsto ^n v$ or $\infty$ otherwise.
+
+Note that here the evaluation is deterministic and unique, so the cost definition makes sense.
+
+Here we also assume that all steps cost the same as a simplification, but in reality this is not necessarily the case.
+
+\subsection{Evaluation dynamics (also known as big-step semantics)}
+
+We define the following notations:
+
+$\eval{e}{q}{v}$: expression $e$ evaluates to value $v$, and this costs $q$.
+
+
+$\evalenv{V}{M}{e}{q}{v}$: under environment $V: \mathrm{Vars} \rightarrow \mathrm{Vals}$, with cost metric $M$, expression $e$ evaluates to val $v$ with cost $q \in \mathbb{Q}$.
+
+$M: \{ \text{unit, app, lam, var} \} \rightarrow \mathbb{Q}$: cost metric that maps each operation to a rational cost value. Here costs could be negative, indicating that more resources are becoming available.
+
+
+Rules are given in Fig.~\ref{fig:eval-sem}.
+\begin{figure}[htb]
+\begin{mathpar}
+  \inferrule{ }{ \evalenv{V}{M}{x}{\costof{M}{var}}{V(x)} }
+    \and
+  \inferrule{ }{ \evalenv{V}{M}{\trivc}{\costof{M}{var}}{\trivc} }
+    \and
+  \inferrule{ }{ \evalenv{V}{M}{\lam{x}{\tau}{e} }{\costof{M}{var}}{ \lam{x}{\tau}{e} } }
+    \and
+  \inferrule{V \vdash_M e_1 \Downarrow^{c_1} \lambda(x:\tau)e \\ 
+    V \vdash_M e_2 \Downarrow^{c_2} v_2 \\
+    V[x \mapsto v_2] \vdash_M e \Downarrow^c v
+  }{V \vdash_M e_1(e_2) \Downarrow^{c+c_1+c_2+\costof{M}{app}} v}
+\end{mathpar}
+\caption{Evaluation dynamics}
+\label{fig:eval-sem}
+\end{figure}
+
+What metric $S$ should we use?
+
+\begin{align}
+\costof{S}{app}&=1 \\
+\costof{S}{unit} &=0 \\
+\costof{S}{var} &=0 \\
+\costof{S}{lam} &=0
+\end{align}
+
+Using cost metric $S$, for all $e:\tau$ we can prove that $e \mapsto^n v$ iff $\vdash _S e \Downarrow^n v$
+
+
+
+\section{High-water mark}
+
+When resources come and go we want to know the high-water mark within the process.
+
+An example is stack usage. The number of stack cells we occupied changes as time goes by, but we are most interested in the highest stack usage in the process.
+
+For this purpose, notice that $V \vdash_M e \Downarrow ^q v$ (where $q$ acts like net cost) is not what we want.
+
+We give two options in the following subsections.
+
+\subsection{ Resource safety}
+$\evalwatermark{V}{M}{q}{q'}{e}{v}$: under environment $V$, metric $M$, and given that $q$ resources are available, expression $e$ evaluates to value $v$, and $q'$ resource are available afterwards (we always require $q,q'\geq 0$ or it doesn't make sense)
+
+Semantics are show in Fig.~\ref{fig-semReSafety}.
+
+\begin{figure}[htb]
+\begin{mathpar}
+\inferrule
+{\empty}
+{
+\evalwatermark{V}{M}{q+\costof{M}{var}}{q'}{x}{V(x)}
+}
+\and
+\inferrule
+{\empty}
+{
+\evalwatermark{V}{M}{q+\costof{M}{lam}}{q}{\lam{x}{\tau}{e}}{\lam{x}{\tau}{e}}
+}
+\and
+\inferrule
+{
+    \evalwatermark{V}{M}{q}{p}{e_1}{\lam{x}{\tau}{e}}
+    \and 
+    \evalwatermark{V}{M}{p}{r}{e_2}{v_2}
+    \and 
+    \evalwatermark{V[x\mapsto v_2]}{M}{r}{q'}{e}{v}
+}
+{
+    \evalwatermark{V}{M}{q+\costof{M}{app}}{q'}{e_1(e_2)}{v}
+}
+\and
+\inferrule
+{
+    \empty
+}
+{
+    \evalwatermark{V}{M}{q+\costof{M}{app}}{q'}{e_1(e_2)}{v}
+}
+\end{mathpar}
+\caption{Big-step semantics for resource safety}
+\label{fig-semReSafety}
+\end{figure}
+
+We can prove the following results regarding resource safety.
+\begin{lemma}
+Let $\evalwatermark{V}{M}{q}{q'}{e}{v}$ and $\evalwatermark{V}{M}{p}{p'}{e}{v'}$  
+then $q-q'=p-p'$ and $v=v'$.
+\end{lemma} 
+\begin{theorem}
+If $\evalwatermark{V}{M}{q}{q'}{e}{v}$ then $\evalenv{V}{M}{e}{q-q'}{v}$.
+\end{theorem} 
+Note that the theorem is NOT saying: $\evalenv{V}{M}{e}{c}{v}$ implies $\evalwatermark{V}{M}{c}{0}{e}{v}$. 
+
+\subsection{ Resource monoid}
+$\evalmono{V}{M}{e}{v}{q}{q'}$: $q$ is the high-water mark and $q'$ is left-over resources ($q, q' \geq 0$).
+
+
+\begin{figure}[htb]
+\centering
+\begin{mathpar}
+\inferrule
+{
+    M(var)\geq 0
+}
+{
+    \evalmono{V}{M}{x}{V(x)}{\costof{M}{var}}{0} 
+}
+\and
+\inferrule
+{
+    M(var)< 0
+}
+{
+    \evalmono{V}{M}{x}{V(x)}{0}{-\costof{M}{var}}
+}
+
+
+
+\inferrule
+{
+    M(app)\geq0 \and
+    V \vdash_M e_1 \Downarrow \lambda(x:\tau)e \mid (q,q')  \and
+    V\vdash_M e_2 \Downarrow v_2 \mid (p, p')
+    \and
+    V[x\mapsto v_2] \vdash_M e\Downarrow v \mid (r, r')
+}
+{
+    V \vdash_M e_1(e_2) \Downarrow v \mid (\costof{M}{app},0) \cdot (q,q') \cdot (p,p') \cdot (r,r')
+}
+
+\end{mathpar}
+ \caption{Semantics for resource monoid method. For simplicity we only list the rule for app when its cost is nonnegative. The definition of the operator $\cdot$ is left as an exercise.}
+ \label{fig:sem-resource-monoid}
+\end{figure}
+
+Homework: define the operator $\cdot$: $(p,p') \cdot (q,q') = ?$ so that the following theorem holds
+
+\begin{theorem}
+\begin{enumerate}
+    \item If $V\vdash_M e \Downarrow v \mid (q, q')$ then $V\vdash_{q'}^q e \Downarrow v $.
+    \item If $V\vdash_{q'}^q e \Downarrow v$ then $V \vdash e \Downarrow v \mid (p, p')$ and $p\leq q$.
+\end{enumerate}
+  
+\end{theorem}
+
+\end{document}
+\endinput
+%%
+%% End of file `sample-manuscript.tex'.

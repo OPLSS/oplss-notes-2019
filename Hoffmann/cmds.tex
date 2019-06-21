@@ -1,0 +1,22 @@
+\newcommand{\arr}[2]{#1 \rightarrow #2}
+\newcommand{\arrc}[2]{\mathrm{arr}\left(#1,#2\right)}
+
+\newcommand{\unit}{\mathbf{1}}
+\newcommand{\unitc}{\mathrm{unit}}
+
+\newcommand{\app}[2]{#1\left(#2\right)}
+\newcommand{\appc}[2]{\mathrm{app}\left(#1,#2\right)}
+
+\newcommand{\lam}[3]{\lambda\left(#1:#2\right).~#3}
+\newcommand{\lamc}[3]{\mathrm{lam}\{#2\}\left(#1.#3\right)}
+
+\newcommand{\triv}{\mathrm{triv}}
+\newcommand{\trivc}{\langle\rangle}
+
+\newcommand{\isval}[1]{#1\,\mathrm{val}}
+
+\newcommand{\costof}[2]{#1\left(\mathrm{#2}\right)}
+\newcommand{\eval}[3]{ #1 \Downarrow^{#2} #3}
+\newcommand{\evalenv}[5]{#1 \vdash_{#2} #3 \Downarrow^{#4}#5}
+\newcommand{\evalwatermark}[6]{#1 {}_{#2}\!\vdash^{#3}_{#4} #5 \Downarrow #6 }
+\newcommand{\evalmono}[6]{#1 \vdash_{#2} #3 \Downarrow #4 \mid \left(#5,#6\right)}
