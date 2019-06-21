@@ -107,8 +107,8 @@ If something has label $l \not\sqsubseteq \refl l$, we can't downgrade it nonmal
 %figure 4 here
 
 \section{Hardware security}
+Modern systems:
 \begin{tabular}{|c|}
-Modern systems \\
 \hline
 app code \\
 \hline
@@ -119,7 +119,8 @@ OS \\
 ISA \\ 
 \hline
 $\mu$ architecture \\
-\end{tabular}{|c|}
+\hline
+\end{tabular}
 
 Correctness and security depend on having contracts between these different layers. 
 
@@ -131,12 +132,12 @@ Contracts should be compositional
 Mandatory vs. discretionary access control
 
 Example
-\begin{lstlisting}[mathescape]
-if h_1 then
-    h_2 := l_1 // pulls l_1 into cache
+\begin{lstlisting}[mathescape,frame=single,basicstyle=\ttfamily,language=java]
+if h$_1$ then
+    h$_2$ := l$_1$ // pulls l$_1$ into cache
 else 
-    h_2 := l_2
-l_3 := l_1 // false if h_1 = true
+    h$_2$ := l$_2$
+l$_3$ := l$_1$ // false if h$_1$ = true
 \end{lstlisting}
 
 Timing update to $l_3$ teaches value of $h_1$.
@@ -147,9 +148,9 @@ Zagieboylo/CSF'19: detailed ISA contract for realistic ISA supporting nonmalleab
 Consider imperative language IMP where each command has a \emph{read label} and a \emph{write label}.
 Read label $l_r$ bounds influences on time taken by instruction
 Write label $l_w$ is a lower bound on effects instruction has on $\mu$-architecture state
-\begin{tabular}{|c|}
+\begin{tabular}{|l|}
 \hline
-ISA
+ISA \\
 $\quad$ register \\
 \hline
 $\mu$-arch \\
@@ -176,12 +177,12 @@ $(\gamma_1 ~-l \gamma_2 \land E_1 ~_l E_2 \land c_{l_r,l_w},\gamma_i,E_i,G_i \lo
 
 Hardware satisfying these three porperties can reason about information flow for software/hardware composition
 
-\begin{lstlisting}[mathescape]
-if h_1 then
-    h_2 := l_1[L,H] // pulls l_1 into cache
+\begin{lstlisting}[mathescape,frame=single,basicstyle=\ttfamily,language=java]
+if h$_1$ then
+    h$_2$ := l$_1$[L,H] // pulls l$_1$ into cache
 else 
-    h_2 := l_2[L,H]
-l_3 := l_1[L,L] // false if h_1 = true
+    h$_2$ := l$_2$[L,H]
+l$_3$ := l$_1$[L,L] // false if h$_1$ = true
 \end{lstlisting}
 $h_1$ flows into assignment $h_2$ of $l_1$
 
