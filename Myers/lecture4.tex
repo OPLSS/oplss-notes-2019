@@ -5,6 +5,7 @@
 \usepackage{amsmath,amsthm,stmaryrd,amssymb,fdsymbol}
 \usepackage{bussproofs}
 \usepackage{listings}
+\usepackage{tikz}
 
 \newcommand{\la}{^{\leftarrow}}
 \newcommand{\ra}{^{\rightarrow}}
@@ -44,6 +45,18 @@ Rule for transparent endorsement:
 \end{prooftree}
 
 $\bigtriangledown$ (voice) maps confidentiality to corresponding integrity
+
+
+\begin{tikzpicture}
+  \node (n1) {$s_{11}$};
+  \node (n2) [right of= n1] {$\sim_L$};
+  \node (n3) [right of= n2] {$s_{12}$};
+  \node (n10) [below of= n1] {$\sim_H$};
+  \node (n11) [below of= n3] {$\sim_H$};
+  \node (n4) [below of= n10] {$s_{21}$};
+  \node (n5) [right of= n4] {$\sim_L$};
+  \node (n6) [right of= n5] {$s_{22}$};
+\end{tikzpicture}
 
 % figure 2 here
 RD: $\llbracket S_{11} \rrbracket \approx_L \llbracket S_{21} \rrbracket \Rightarrow \llbracket S_{12} \rrbracket \approx_L \llbracket S_{22} \rrbracket $
