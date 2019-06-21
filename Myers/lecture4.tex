@@ -2,10 +2,14 @@
 \usepackage[utf8]{inputenc}
 \usepackage[hyphens]{url} 
 \usepackage[breaklinks]{hyperref}
-\usepackage{amsmath,amsthm,stmaryrd,amssymb,fdsymbol}
+\usepackage{amsmath,amsthm,stmaryrd,amssymb,stix}
 \usepackage{bussproofs}
 \usepackage{listings}
 \usepackage{tikz}
+\usetikzlibrary{matrix,patterns}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}{Definition}[theorem]
 
 \newcommand{\la}{^{\leftarrow}}
 \newcommand{\ra}{^{\rightarrow}}
@@ -17,35 +21,56 @@
 
 \maketitle
 
-NI $\rightarrow$ Robust declassification (NI refines RD)
+\section{Transparent Endorsement}
 
-Robust declassification breaks the confidentiality/integrity duality
+From last time: NI $\rightarrow$ Robust declassification (NI refines RD). Robust declassification breaks the confidentiality/integrity duality.
 
-Can be restored with dual: Transparent Endorsement (TE).
-% figure 1 here
-Example: password checker
+To restore duality  we define
+Transparent Endorsement (TE). For an example, see the code fragment in figure~\ref{code1}
+\begin{figure}[ht!]
+\begin{tikzpicture}
+
+\node[below] at (1,0) (Hla) {$\quad H\la$};
+\node[above] at (1,2) (Hra) {$\quad H\ra$};
+\node[left] at (0,1) (L) {$L$};
+\node[right] at (2,1) (H) {$H$};
+
+\draw[thick]  (1,0) -- (2,1) -- (1,2) -- (0,1) --  (1,0);
+
+\draw[thick,->] (-0.2,1.2) -- (0.8,2.2) node[midway,above] {$C$};
+\draw[thick,->] (-0.2,0.8) -- (0.8,-0.2) node[midway,below] {$I$};
+\end{tikzpicture}
+\label{fig1}
+\caption{Lattice for TE}
+\end{figure}
+
+\begin{figure}
 \begin{lstlisting}[mathescape,frame=single,basicstyle=\ttfamily,language=java]
 String{H} pwd;
  bool{H$^{\leftarrow}$} check_password(String{H$^{\rightarrow}$} guess) {
-    String{H} endorsed_guess = endorse(guess,$\rightarrow$ to H);
+    String{H} endorsed_guess = endorse(guess,H$^\rightarrow$ to H);
     bool{H} res = (password == endorsed_guess);
-    return declassify(res,H to H${\leftarrow}$);
+    return declassify(res,H to H$^{\leftarrow}$);
 }
 \end{lstlisting}
-Problem can arise when adversary manages to steer password value directly into \texttt{check\_password} function. (abusing downgrading); problem arises as password with H label can flow into H$^{\rightarrow}$. 
+\label{code1}
+\caption{Example: password checker}
+\end{figure}
 
-To solve,
+A problem can arise when adversary manages to steer password value directly into \texttt{check\_password} function, abusing downgrading. The problem arises because \texttt{pwd} with H label (trusted) can flow into H$^{\rightarrow}$ (untrusted). To solve the problem we can give label L to variable $\texttt{guess}$ (untrusted and unconfidential).
 
-Rule for transparent endorsement:
+This is enforced by the typing  rule for \emph{transparent endorsement}:
+
 \begin{prooftree}
     \AxiomC{$\Gamma(y) \sqsubseteq l_1$}
     \AxiomC{$ l_2 \sqsubseteq\Gamma(y) $}
     \AxiomC{$ l_1 \sqsubseteq l_2 \sqcup \bigtriangledown (l_1 \sqcup pc) $}
-    \TrinaryInfC{$pc \vdash x := \text{endorse}(y,l_1 to l_2)$}    
+    \TrinaryInfC{$pc \vdash x := \text{endorse}(y,l_1 $ to $l_2)$}    
 \end{prooftree}
 
-$\bigtriangledown$ (voice) maps confidentiality to corresponding integrity
+$\bigtriangledown$ = voice = maps confidentiality to corresponding integrity
 
+We can describe both robust declassification and transparent endorsement in the same picture:
 
 \begin{tikzpicture}
   \node (n1) {$s_{11}$};
@@ -59,41 +84,92 @@ $\bigtriangledown$ (voice) maps confidentiality to corresponding integrity
 \end{tikzpicture}
 
 % figure 2 here
-RD: $\llbracket S_{11} \rrbracket \approx_L \llbracket S_{21} \rrbracket \Rightarrow \llbracket S_{12} \rrbracket \approx_L \llbracket S_{22} \rrbracket $
 
-TE: $S_{11} \approx_H S_{12} \Rightarrow S_{21} \approx_H S_{22} $
+\begin{definition}[Robust declassification]  
+\begin{equation*}
+  \llbracket s_{11} \rrbracket \approx_L \llbracket s_{21} \rrbracket \ \land \text{ relevant inputs} \Rightarrow \llbracket s_{12} \rrbracket \approx_L \llbracket s_{22} \rrbracket 
+\end{equation*}
+\end{definition}
+
+
+\begin{definition}[Transparent endorsement]
+\begin{equation*}
+  \llbracket s_{11} \rrbracket \approx_H \llbracket s_{12} \rrbracket \ \land \text{ relevant inputs} \Rightarrow \llbracket s_{21} \rrbracket \approx_H \llbracket s_{22} \rrbracket
+\end{equation*}  
+\end{definition}  
 
 RD + TE ="nonmalleable informationi flow"
 
-Where do $\bigtriangleup$ and $\bigtriangledown$ come from?
+\paragraph{Where do $\bigtriangleup$ and $\bigtriangledown$ come from?}\ 
 
 FLAM (Arden et al. CSF'15)
-
 \begin{enumerate}
     \item labels are principals
     \item primitive principals (Alice, Bob, p, q, $\ldots$)
-    \item prinicpal projections ($p^{\leftarrow}$, integrity projection), $p^{\rightarrow}$, confidentiality)
-    \item joins and meets on principals $p \land q$ (reads as: powers of both $p$ and $q$), $p \wedge q$. $\forall p,q. p \land q \succeq p \wedge q$. (trust ordering). Least powerful principal is $\bot$; most powerful is $\top$. %see figure 3
+    \item prinicpal projections ($p^{\leftarrow}$ integrity projection, $p^{\rightarrow}$ confidentiality)
+    \item joins and meets on principals $p \land q$ (reads as: powers of both $p$ and $q$), $p \lor q$.
+      \begin{equation*}
+        \forall p,q. p \land q \succeq p \succeq p \lor q
+      \end{equation*}
+where $\succeq$ is a trust ordering. Least powerful principal is $\bot$; most powerful is $\top$. See figure~\ref{fig3}
+\begin{figure}[ht!]
+\begin{tikzpicture}
+
+\node[below] at (1,0) (Tla) {$\quad \top\la$};
+\node[above] at (1,2) (Tra) {$\quad \top\ra$};
+\node[left] at (0,1) (bot) {$\bot$};
+\node[right] at (2,1) (top) {$\top$};
+
+\draw[thick]  (1,0) -- (2,1) -- (1,2) -- (0,1) --  (1,0);
+
+\draw[thick,->] (-0.2,1.2) -- (0.8,2.2) node[midway,above] {$L$};
+\draw[thick,->] (-0.2,0.8) -- (0.8,-0.2) node[midway,below] {$H$};
+
+\draw[thick,->] (0,-.75) -- (2,-.75) node[midway,below] {$\succeq$};
+\draw[thick,->] (2.75,0) -- (2.75,2) node[midway,right] {$\sqsubseteq$};
+
+\draw[dotted] (0.25,1) -- (1.75,1);
+\node[below] at (0.5,1) (L1) {$L$};
+\fill (L1.north) circle [radius=1.5pt];
+\node[below] at (1.5,1) (H1) {$H$};
+\fill (H1.north) circle [radius=1.5pt];
+\end{tikzpicture}
+\label{fig3}
+\caption{Lattice for FLAM}
+\end{figure}
 \end{enumerate}
 
-Normal form for principals: $A^{\leftarrow} \land B^{\rightarrow}$.
-$A,B$ are CNF expressions over primitive principals.
+A normal form for principals is $A^{\leftarrow} \land B^{\rightarrow}$, where $A,B$ are CNF expressions over primitive principals. Then $\bigtriangleup$ and $\bigtriangledown$ are defined as:
 
-$\bigtriangleup (A \la \land B \ra) = A \ra \land T \la$
-$\bigtriangledown (A \la \land B \ra) = B \la$
+\begin{align*}
+  \bigtriangleup (A \la \land B \ra) &= A \ra \land T \la \\
+  \bigtriangledown (A \la \land B \ra) &= B \la \\
+  \text{Reflection:} \refl (A \la \land B \ra) &= B \la \land A \ra                                         
+\end{align*}
 
-Reflection: $ \refl (A \la \land B \ra) = B \la \land A \ra$
 
-if $l \not\sqsubseteq \refl l$, can't downgrade nonmalleably
-%figure 4 here
+If something has label $l \not\sqsubseteq \refl l$, we can't downgrade it nonmalleably. See figure~\ref{fig4}.
+
+
+\begin{figure}[ht!]
+\begin{tikzpicture}
+
+\draw[thick]  (1,0) -- (2,1) -- (1,2) -- (0,1) --  (1,0);
+\draw[thick,pattern=north east lines] (0,1) -- (2,1) -- (1,2) -- (0,1);
+
+\draw[thick,->] (2,2) node[above] {compromised labels} -- (1,1.3) ;
+
+\end{tikzpicture}
+\label{fig4}
+\caption{Reflection drawn in lattice}
+\end{figure}
 
 \section{Hardware security}
 
 There are different layers at the hardware level: \\
 
+Modern systems:
 \begin{tabular}{|c|}
-\hline
-Modern systems \\
 \hline
 app code \\
 \hline
@@ -105,7 +181,7 @@ ISA \\
 \hline
 $\mu$ architecture \\
 \hline
-\end{tabular}{|c|} \\
+\end{tabular} \\
 
 \begin{itemize}
 	\item{Correctness and security depends on having contracts between these different layers}
@@ -144,8 +220,9 @@ Consider imperative language IMP where each command has a \emph{read label} and 
 	\item{Write label $l_w$ is a lower bound on effects instruction has on $\mu$-architecture state}
 \end{itemize}
 \begin{tabular}{|c|}
+
 \hline
-ISA
+ISA \\
 $\quad$ register \\
 \hline
 $\mu$-arch \\
@@ -175,6 +252,7 @@ $l_w \not\sqsubseteq l \land c_{[l_r,l_w]}, \gamma,E,G \longrightarrow c', \gamm
 \textbf{Single-step noninterference:} \\
 $(\gamma_1 ~-l \gamma_2 \land E_1 ~_l E_2 \land c_{l_r,l_w},\gamma_i,E_i,G_i \longrightarrow c_i,\gamma'_i,E'_i,G_i') \Rightarrow E'_1 = E'_2$
 
+
 \begin{lstlisting}[mathescape,frame=single,basicstyle=\ttfamily,language=java]
 if $h_1$ then
     $h_2$ := $l_1$[L,H] // pulls $l_1$ into cache
@@ -201,7 +279,9 @@ Use SecVerilog = Verilog + security labels
 
 \emph{Soundness:} at each clock tick, no H information leaks to a L variable.
   
-See slides for the rest.
+See slides for the rest. 
+
+
 
 
 
