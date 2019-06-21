@@ -38,7 +38,7 @@
 \usepackage{bussproofs}
 
 
-
+\newtheorem{theorem}{Theorem}
 
 \setlength\parindent{0pt} % Removes all indentation from paragraphs
 
@@ -56,7 +56,7 @@
 
 
 \begin{document}
-	
+	\date{}
 	\maketitle % Insert the title, author and date
 	
 	\begin{center}
@@ -249,20 +249,16 @@
 		}
 		\caption{\textit{Top}: A classical TM that is in state \(q\) and has \(a_*\) on the tape. \textit{Bottom}:Visualization of a process ``$\blacktriangleleft q$'' on a tape. The Turing machines current cell under the head contains \(a_*\)}
 	\end{figure}
-<<<<<<< HEAD
-	
-=======
-\\
-\\
+
 There are two properties we wish to prove and these are topical properties you would find in a functional calculus.
-\\\\
+
 \begin{theorem}[Preservation]
 if \(A \vdash P : C\) and \(P \rightarrow Q\) then \( A \vdash Q:C \)
 \end{theorem}
 
 
 This theorem allows us to have the property that with every reduction step we are able to preserve the typing of the processes.
-\\\\
+
 \begin{theorem}[Progress]
 if \( A \vdash P:C \) then either:
 \begin{itemize}
@@ -272,7 +268,7 @@ if \( A \vdash P:C \) then either:
 \end{itemize}
 \end{theorem}
 As there is no notation of values we have to define when a process has no reductions that can take place on them. The progress rule states that if a process is well typed then a reduction can be performed or \(P\) can no longer reduce and will either be a port forwarding or be waiting to send or receive a value. 
-\\
+
 
 We now wish to relax our context to allow multiple assumptions
 
@@ -291,8 +287,7 @@ z \leftarrow merge \leftarrow x \, y = case \, x \, ( &  b_0 \Rightarrow z.b_0 \
 \end{equation*}
 
 \(merge\) is written as \(z \leftarrow merge \leftarrow x \, y \) because you can read \(merge\) as a function that takes inputs \(x, y\) and then send its outputs along \(z\). This merge function works by looking only at the bit that is sent along \(x\) and forwarding it along \(z\) then recursively calling itself however switching \(x\) and \(y\) meaning the next call reads the bit from \(y\)
-\\
-\\
+
 We must now define a new context that allows multiple assumptions. We do this recursively as 
 \[ \Gamma :: = 	\bullet \mid \Gamma , x:A \]
 Our context is now either empty or contains a channel of type \(A\) and also consists of another context.
