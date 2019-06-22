@@ -98,8 +98,11 @@ For type inference we need algorithmic (or syntax-directed) rules. We change all
 
 Algorithm for type inference:
 \begin{enumerate}
-\item Infer usual tpyes (without annotations), which results in a type derication (like example in figure~\ref{fig:type-inference-example} with all annotations removed);
-\item Add potential variables where a potential annotation is required. See figure~\ref{fig:type-inference-example-vars}. Note the this step is only partially done in the figure;
+\item Infer usual tpyes (without annotations), which results in a type derivation (like example in figure~\ref{fig:type-inference-example} with all annotations removed);
+\item Add potential variables where a potential annotation is required,  both in $\tau_{id}$ and in the derivation. See figure~\ref{fig:type-inference-example-vars}. Note the this step is only partially done in the figure;
+  \begin{equation*}
+    \tau_{id} \text{ becomes } L^p(unit) \rightarrow^{q/q'} L^{p'}(unit)
+  \end{equation*}
 \item Derive from the typing rules linear constraints on potential variables;
   \begin{example}
     For the fix example, some of the constraints are:
