@@ -165,6 +165,9 @@ If something has label $l \not\sqsubseteq \refl l$, we can't downgrade it nonmal
 \end{figure}
 
 \section{Hardware security}
+
+There are different layers at the hardware level: \\
+
 Modern systems:
 \begin{tabular}{|c|}
 \hline
@@ -178,35 +181,46 @@ ISA \\
 \hline
 $\mu$ architecture \\
 \hline
-\end{tabular}
+\end{tabular} \\
 
-Correctness and security depend on having contracts between these different layers. 
-
-Classic specifications do not work (Meltdown, spectre). Contracts should capture information flow (hyperproperties)
-
-Contracts should be compositional
-
+\begin{itemize}
+	\item{Correctness and security depends on having contracts between these different layers}
+	\item{Classic specifications do not work (Meltdown, spectre)}
+	\item{Contracts should capture information flow (hyperproperties)}
+	\item{Contracts should be compositional}
 %figure 5 here
-Mandatory vs. discretionary access control
+	\item{Mandatory vs. discretionary access control}
+\end{itemize}
 
-Example
-\begin{lstlisting}[mathescape,frame=single,basicstyle=\ttfamily,language=java]
-if h$_1$ then
-    h$_2$ := l$_1$ // pulls l$_1$ into cache
+\subsection{Example}
+
+\begin{lstlisting}[mathescape,frame=single,basicstyle=\ttfamily,language=java,caption={Timing to update $l_3$ depends on the value of $h_1$.},captionpos=b]
+if $h_1$ then
+    $h_2$ := $l_1$  //pulls $l_1$ into cache
 else 
-    h$_2$ := l$_2$
-l$_3$ := l$_1$ // false if h$_1$ = true
+    $h_2$ := $l_2$
+$l_3$ := $l_1$     //false if $h_1$ = true
 \end{lstlisting}
 
-Timing update to $l_3$ teaches value of $h_1$.
+\subsection{Reference papers for reading}
 
-Zhang/PLDI'12: ISA/M-arch contract that rules out timing channels (in addition to previously discussed leakage)
-Zagieboylo/CSF'19: detailed ISA contract for realistic ISA supporting nonmalleable downgrading
+\begin{itemize}
+	\item{Zhang/PLDI'12: ISA/M-arch contract that rules out timing channels (in addition to previously discussed leakage)}
+	\item{Zagieboylo/CSF'19: Detailed ISA contract for realistic ISA supporting nonmalleable downgrading}
+\end{itemize}
 
-Consider imperative language IMP where each command has a \emph{read label} and a \emph{write label}.
-Read label $l_r$ bounds influences on time taken by instruction
-Write label $l_w$ is a lower bound on effects instruction has on $\mu$-architecture state
-\begin{tabular}{|l|}
+\subsection{IMP: read and write label}
+
+Consider imperative language IMP where each command has a \emph{read label} and a \emph{write label}. \\
+
+\textbf{Read label and write label properties:}
+
+\begin{itemize}
+	\item{Read label $l_r$ bounds influences on time taken by instruction}
+	\item{Write label $l_w$ is a lower bound on effects instruction has on $\mu$-architecture state}
+\end{itemize}
+\begin{tabular}{|c|}
+
 \hline
 ISA \\
 $\quad$ register \\
@@ -216,33 +230,37 @@ $\quad$ cache \\
 $\quad$ TLB \\
 $\quad \ldots$ \\
 \hline
-\end{tabular}
+\end{tabular}\\ \\
 
-Define two types of semantics
-architecturlar semantcs (like SOS, $c,\gamma \longrightarrow c',\gamma'$)
-$\mu$-arch semantics: $c,\gamma,E,G \longrightarrow c',\gamma',E',G'$
+It defines two type of properties that processor needs to satisfy. Hardware satisfying these three porperties can reason about information flow for software/hardware composition: \\
+\begin{itemize}
+	\item{Architecturlar semantcs (like SOS, $c,\gamma \longrightarrow c',\gamma'$)}
+	\item{$\mu$-arch semantics: $c,\gamma,E,G \longrightarrow c',\gamma',E',G'$}
+\end{itemize}
 
-where $E$ =  the microarchitecture state, $G$ is global (wall-clock) time.
+where $E$ =  the microarchitecture state, $G$ is global (wall-clock) time. \\
  
-read-label property: Given command $c_[l_r,l_w]$
+\textbf{Read-label property:} \\
+Execution time should not depend on high state. \\
+Given command $c_[l_r,l_w]$ \\
 $(\forall x \in vars(c) . \gamma_1(x) = \gamma_2(x)) \land E_1 ~_{l_r} E_2) \land c_[l_r,l_w],\gamma_i,E_i,G \longrightarrow c_i,\gamma_i',E'_i,G_i)  \Rightarrow G_1 = G_2$ for $i \in 
-\{1,2\}$
+\{1,2\}$ \\
 
-write-label property: $l_w \not\sqsubseteq l \land c_{[l_r,l_w]}, \gamma,E,G \longrightarrow c', \gamma',E',G' \Rightarrow E ~_l E' $
+\textbf{write-label property:}\\
+$l_w \not\sqsubseteq l \land c_{[l_r,l_w]}, \gamma,E,G \longrightarrow c', \gamma',E',G' \Rightarrow E ~_l E' $ \\
 
-Single-step noninterference
+\textbf{Single-step noninterference:} \\
 $(\gamma_1 ~-l \gamma_2 \land E_1 ~_l E_2 \land c_{l_r,l_w},\gamma_i,E_i,G_i \longrightarrow c_i,\gamma'_i,E'_i,G_i') \Rightarrow E'_1 = E'_2$
 
-Hardware satisfying these three porperties can reason about information flow for software/hardware composition
 
 \begin{lstlisting}[mathescape,frame=single,basicstyle=\ttfamily,language=java]
-if h$_1$ then
-    h$_2$ := l$_1$[L,H] // pulls l$_1$ into cache
+if $h_1$ then
+    $h_2$ := $l_1$[L,H] // pulls $l_1$ into cache
 else 
-    h$_2$ := l$_2$[L,H]
-l$_3$ := l$_1$[L,L] // false if h$_1$ = true
+    $h_2$ := $l_2$[L,H]
+$l_3$ := $l_1$[L,L] // false if $h_1$ = true
 \end{lstlisting}
-$h_1$ flows into assignment $h_2$ of $l_1$
+$h_1$ flows into assignment $h_2$ of $l_1$. This is updated code from Example 1.1.
 
 \section{HDLs}
 (Hardware description language)
