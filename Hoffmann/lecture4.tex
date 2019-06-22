@@ -50,10 +50,12 @@ This theorem shows that the type derivation is a certificate for bound correctne
 
 \section{Type inference}
 
-From the typing rules defined, it follows that:
-\[\ldash{}{} fix(id . \lambda(x : L(unit)) 
-    matL(X,nil,y,ys,icons(y,tick\{2\} if (ys))) : L^2(unit) \rightarrow^{0/0} L^0(unit)\]
-
+\begin{example}
+We want to find a derivation for:
+\[\ldash{0}{0} fix\big(id .\ \lambda(x : L(unit)) 
+    \ matL(x;\ nil;\ y,ys.cons(y;\ tick\{2\} (id (ys)))\big) : L^2(unit) \rightarrow^{0/0} L^0(unit)\]
+\end{example}
+  
 See figure~\ref{fig:type-inference-example} for the deriviation tree.
 
 
@@ -89,7 +91,7 @@ For type inference we need algorithmic (or syntax-directed) rules.
 \begin{prooftree}
 \AxiomC{$q \geq q'$}
 \AxiomC{$\tau <: \tau'$}
-\BinaryInfC{$\Gamma, x: \tau \ldash{q}{q'} x : \tau$}
+\BinaryInfC{$\Gamma, x: \tau \ldash{q}{q'} x : \tau'$}
 \end{prooftree}
 \end{example}
 
@@ -103,7 +105,7 @@ Algorithm for type inference:
 \end{enumerate}
 
 \section{Implementation in RAML and examples}
-Live RAML demo showing binary counter, using the source code displayed in figure~\ref{code:binary-counter}.
+Live RAML (Resource aware ML) demo showing binary counter, using the source code displayed in figure~\ref{code:binary-counter}.
 \begin{figure}[ht]
 \begin{lstlisting}[language=caml,frame=single,basicstyle=\footnotesize]
 
