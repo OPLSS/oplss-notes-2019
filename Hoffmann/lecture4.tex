@@ -1,0 +1,127 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[hyphens]{url} 
+\usepackage[breaklinks]{hyperref}
+\usepackage{amsmath,amsthm,stmaryrd,amssymb}
+\usepackage{bussproofs}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{rotating}
+\usetikzlibrary{matrix,patterns}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}{Definition}[theorem]
+\newtheorem{example}{Example}
+
+\newcommand{\ldash}[2]{\vdash^{\hspace{-.4em}#1}_{\hspace{-.4em}#2}}
+
+\title{Resource Analysis \\ \Large{Lecture 4}} 
+
+\begin{document}
+
+\maketitle
+\section{Recap: Soundness}
+
+\begin{definition}[Progress]
+If $\ldash{q}{q'} e : \tau $ and $p \geq q$ then either $e$ is a value or $\exists e',p'$ s.t. $\langle e,p \rangle \mapsto \langle e',p'\rangle$.
+\end{definition}
+
+\begin{definition}[Preservation]
+If $\ldash{q}{q'} e : \tau$ , $p \geq q'$ and   $\langle e,p \rangle \mapsto \langle e',p'\rangle$ then $\ldash{p'}{q'} e': \tau$.
+\end{definition}
+
+Hoffman proposes an alternative soundness theorem:
+
+Recall $V \vdash e \Downarrow (q,q')$
+\begin{definition}
+$\phi(V : \Gamma) = \sum_{x \in \text{dom}(\Gamma)} \phi(V(x)) : \Gamma(x) $
+\end{definition}
+where $\Gamma $ assigns types to variables.
+
+\begin{theorem}
+Let $V : \Gamma, \Gamma \ldash{q}{q'} e : \tau$ and $V \vdash e \Downarrow v \mid (p,p')$ then $\phi(V:\Gamma) + q \geq p$ and $\phi (V : \Gamma) +  q - \phi (v : \tau) \geq p - p'$
+\end{theorem}
+
+
+\section{Type inference}
+
+From the typing rules defined, it follows that:
+\[\ldash{}{} fix(id . \lambda(x : L(unit)) 
+    matL(X,nil,y,ys,icons(y,tick\{2\} if (ys))) : L^2(unit) \rightarrow^{0/0} L^0(unit)\]
+
+See figure~\ref{fig:type-inference-example} for the deriviation tree.
+
+
+\begin{sidewaysfigure}[ht]
+\begin{prooftree}
+\def\defaultHypSeperation{.3em}
+\AxiomC{$x : L^2(1) \ldash{0}{0} z : L^2(1)$}
+\AxiomC{$id : \tau_{id} \ldash{0}{0} nil : L^0(1)$}
+%
+\AxiomC{}
+\LeftLabel{relax}
+\UnaryInfC{$y : 1 \ldash{2}{2} y : 1$}
+
+\AxiomC{}
+\LeftLabel{app}
+\UnaryInfC{$id : \tau_{id},ys : L^2(1) \ldash{0}{0} id (us) : L^0(1)$}
+\UnaryInfC{$id : \tau_{id}, yss :L^2(1) \ldash{2}{0} tick \{2\} (id (ys)) :  L^0(1)$}
+
+\BinaryInfC{$id : \tau_{id}, y : 1, ys: : L^2(1) \ldash{2}{0} cons(y,tick \{2\} id(ys)) : L^0(1)$}
+%
+\TrinaryInfC{$id : \tau_{id}, x : L^2(1) \ldash{}{} e_{id} : L^0(1)$}
+\UnaryInfC{$id : \tau_{id} \ldash{0}{0} \lambda(x) e_{id} : \tau_{id}$}
+\UnaryInfC{$\ldash{0}{0} fix(id \lambda(x) e_{id} : \tau_{id}$}
+\end{prooftree}
+\label{fig:type-inference-example}
+\caption{Example of type inference}
+\end{sidewaysfigure}
+
+
+For type inference we need algorithmic (or syntax-directed) rules.
+
+\begin{example}
+\begin{prooftree}
+\AxiomC{$q \geq q'$}
+\AxiomC{$\tau <: \tau'$}
+\BinaryInfC{$\Gamma, x: \tau \ldash{q}{q'} x : \tau$}
+\end{prooftree}
+\end{example}
+
+Algorithm for type inference:
+\begin{enumerate}
+\item Infer usual tpyes (without annotations), which results in a type derication (like example in figure~\ref{fig:type-inference-example} with all annotations removed);
+\item Add potential variables where a potential annotation is required;
+\item Derive from the typing rules linear constraints on potential variables;
+\item Solve constraints with LP solver;
+\item Objective is the sum of initial potential annotations.
+\end{enumerate}
+
+\section{Implementation in RAML and examples}
+Live RAML demo showing binary counter, using the source code displayed in figure~\ref{code:binary-counter}.
+\begin{figure}[ht]
+\begin{lstlisting}[language=caml,frame=single,basicstyle=\footnotesize]
+
+let rec id x =
+    match x with
+    | [] -> []
+    | y::ys -> y::(let _ = Raml.tick 2.0 in ys)
+
+type bit = Zero | One
+
+let rec inc counter = 
+    match counter with
+    | [] -> [One]
+    | Zero::bs -> One::bs 
+    | One::bs -> Zero::(inc bs)
+
+let rec in_many n = 
+    match n with
+    | Z -> []
+    | S n'-> inc (inc_many n')
+\end{lstlisting}
+\label{code:binary-counter}
+\caption{Code for binary counter example}
+\end{figure}
+Second example with queue.
+\end{document}
