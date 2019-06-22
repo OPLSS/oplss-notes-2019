@@ -22,25 +22,30 @@
 \maketitle
 \section{Recap: Soundness}
 
-\begin{definition}[Progress]
+\begin{theorem}[Progress]
 If $\ldash{q}{q'} e : \tau $ and $p \geq q$ then either $e$ is a value or $\exists e',p'$ s.t. $\langle e,p \rangle \mapsto \langle e',p'\rangle$.
-\end{definition}
+\end{theorem}
 
-\begin{definition}[Preservation]
-If $\ldash{q}{q'} e : \tau$ , $p \geq q'$ and   $\langle e,p \rangle \mapsto \langle e',p'\rangle$ then $\ldash{p'}{q'} e': \tau$.
-\end{definition}
+\begin{theorem}[Preservation]
+If $\ldash{q}{q'} e : \tau$ , $p \geq q$ and   $\langle e,p \rangle \mapsto \langle e',p'\rangle$ then $\ldash{p'}{q'} e': \tau$.
+\end{theorem}
+\begin{proof}[Proof notes]
+  Proved by nested induction on $\ldash{q}{q'} e : \tau$ and $\langle e,p \rangle \mapsto \langle e',p'\rangle$.
+\end{proof}
 
-Hoffman proposes an alternative soundness theorem:
+\paragraph{Alternative soundness theorem:}
 
-Recall $V \vdash e \Downarrow (q,q')$
+Recall the judgement $V \vdash e \Downarrow v \mid (q,q')$
 \begin{definition}
-$\phi(V : \Gamma) = \sum_{x \in \text{dom}(\Gamma)} \phi(V(x)) : \Gamma(x) $
+$\phi(V : \Gamma) = \sum_{x \in \text{dom}(\Gamma)} \phi(V(x) : \Gamma(x)) $
 \end{definition}
 where $\Gamma $ assigns types to variables.
 
 \begin{theorem}
-Let $V : \Gamma, \Gamma \ldash{q}{q'} e : \tau$ and $V \vdash e \Downarrow v \mid (p,p')$ then $\phi(V:\Gamma) + q \geq p$ and $\phi (V : \Gamma) +  q - \phi (v : \tau) \geq p - p'$
+Let $V : \Gamma$ and $\Gamma \ldash{q}{q'} e : \tau$ and $V \vdash e \Downarrow v \mid (p,p')$ then $\phi(V:\Gamma) + q \geq p$ and $\phi (V : \Gamma) +  q - \phi (v : \tau) -q' \geq p - p'$
 \end{theorem}
+
+This theorem shows that the type derivation is a certificate for bound correctness.
 
 
 \section{Type inference}
@@ -125,3 +130,7 @@ let rec in_many n =
 \end{figure}
 Second example with queue.
 \end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
