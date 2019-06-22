@@ -85,7 +85,7 @@ See figure~\ref{fig:type-inference-example} for the deriviation tree.
 \end{sidewaysfigure}
 
 
-For type inference we need algorithmic (or syntax-directed) rules.
+For type inference we need algorithmic (or syntax-directed) rules. We change all the typing rules to incorporate the structural rules:
 
 \begin{example}
 \begin{prooftree}
@@ -97,11 +97,25 @@ For type inference we need algorithmic (or syntax-directed) rules.
 
 Algorithm for type inference:
 \begin{enumerate}
-\item Infer usual tpyes (without annotations), which results in a type derication (like example in figure~\ref{fig:type-inference-example} with all annotations removed);
+\item Infer usual tpyes (without annotations), which results in a type derivation (like example in figure~\ref{fig:type-inference-example} with all annotations removed);
 \item Add potential variables where a potential annotation is required;
 \item Derive from the typing rules linear constraints on potential variables;
+  \begin{example}
+    For the fix example, some of the constraints are:
+    \begin{align*}
+      r_0 \geq r_0' && r_2\leq q && p_1\leq p && r_3 \geq r_3' && p_2\leq p_1 \\
+      r_1=0 && r_2'\geq q' && p_1'\geq p' && r_3\leq r_2 && p_2'\geq p_2 \\
+      r_1'=0 && && && && \\
+      r_4\leq r_3'+p_1 && r_4'<r_2' && && && \\
+      s_1 \geq s_2+2 && s_1'=s_2' && && &&
+    \end{align*}
+  \end{example}
+  
 \item Solve constraints with LP solver;
 \item Objective is the sum of initial potential annotations.
+  \begin{example}
+    For the fix example the objective is to minimize $p+q$.
+  \end{example}
 \end{enumerate}
 
 \section{Implementation in RAML and examples}
