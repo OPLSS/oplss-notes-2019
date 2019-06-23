@@ -1,0 +1,295 @@
+%%%% Generic manuscript mode
+\documentclass[ manuscript,screen, nonacm]{acmart}
+
+\usepackage{amsmath}
+\usepackage{upgreek}
+\usepackage{mathtools}
+\usepackage{mathpartir}
+\usepackage{syntax}
+
+\input{cmds}
+
+%%
+%% \BibTeX command to typeset BibTeX logo in the docs
+% \AtBeginDocument{%
+%   \providecommand\BibTeX{{%
+%     \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+
+\begin{document}
+
+\title{Resource Analysis: Lecture 3}
+
+\author{Jan Hoffmann}
+\email{jhoffmann@cmu.edu}
+
+\maketitle
+
+\section{Short Recapitulation}
+We previously added the ``tick'' construct to the language:
+% TODO: redo these, they don't look right
+\begin{grammar}
+<Expression> e ::= \dots \alt $\tickc{q}{e}$
+\end{grammar}
+
+We have also defined small-step semantics for the language
+\( <e,q> \mapsto <e', q'> \) and a typing judgment,
+\( \typ{\Gamma}{q}{q'}{e}{\tau} \)
+.
+
+% x
+
+% $\lambda(x:\tau) e$
+
+% $e_1(e_2)$
+
+% []
+
+% $e_1 ;; e_2$
+
+% matL(e; e1; x; x1, x2. e2)
+
+% fix{$\tau$}(x.e)
+
+\paragraph{More Details on the Typing Rule for Lambda Abstractions}
+
+Remember the rule for typing lambda abstractions:
+\begin{mathpar}
+\inferrule{\typ{\Gamma,x:\tau}{p}{p'}{e}{\tau'} \\ |\Gamma| = \Gamma}{
+    \typ{\Gamma}{0}{0}{\lamc{x}{\tau}{e}}{\tau\xrightarrow{p|p'}\tau'}
+    }
+\end{mathpar}
+
+Here we formally define the operation \(|\cdot|\).
+\begin{definition}[\(|\cdot|\)]
+  The functions \(|\cdot|_\tau\) and \(|\cdot|_A\) are defined mutually as follows:
+  \begin{align*}
+      |\unitc|_\tau &= \unitc \\
+      |A \rightarrow B|_\tau &= A \rightarrow B\\
+      |L(A)|_\tau &= L(|A|_A)\\
+      |<\tau,q>|_A &= <|\tau|_\tau, 0>
+  \end{align*}
+
+  The operation is extended to environments, in a point-wise manner:
+  \begin{align*}
+      |\cdot| &= \cdot\\
+      |x:\tau, \Gamma| &= x : |\tau|_\tau, |\Gamma|
+  \end{align*}
+\end{definition}
+
+\begin{example}
+    Consider the function \(f\) defined by
+    \begin{align*}
+    f &= \lam{x}{L(\unitc)}{\lam{y}{L(\unitc)}{x}}\\
+    f &: L^1(\unitc) \xrightarrow{0|0} L^0(\unitc) \xrightarrow{0|0} L^1(\unitc)
+    \end{align*}
+    This function \(f\) cannot be typed this way: it is prohibited by the rule for
+    typing lambda-abstractions.
+    
+    This is justified, as allowing such type would lead to an incorrect result.
+    Consider
+    \[
+    g = f(\trivc :: \trivc :: \mathrm{nil})
+    \]
+    and suppose there is a function \(h : L^1(\unitc) \xrightarrow{0 | 0} L^0(\unitc)\).
+    
+    Then, one would obtain, for the following computation:
+    \[
+    < h(g(\mathrm{nil})), h(g(\mathrm{nil})) >
+    \]
+    a bound of \(2\) instead of the expected \(4\).
+\end{example}
+
+The last typing rules for lists and tick can be found in Fig.~\ref{fig:ty-lists-tick}.
+\begin{figure}
+    \centering
+    \begin{mathpar}
+    \inferrule{\typ{\Gamma}{q}{q'}{e}{\tau}}{
+    \typ{\Gamma}{q+p}{q'}{\tickc{p}{e}}{\tau}}
+    \and
+    \inferrule{ }{\typ{\Gamma}{0}{0}{\mathrm{nil}\{\tau\}}{L^q(\tau)}}
+    \and
+    \inferrule{\typ{\Gamma_1}{q}{r}{e_1}{\tau} \\ \typ{\Gamma_2}{r}{q'}{e_2}{L^p({\tau})}}{
+    \typ{\Gamma_1,\Gamma_2}{q+p}{q'}{\mathrm{cons}(e_1,e_2)}{L^p(\tau)}}
+    \and
+    \inferrule{\typ{\Gamma_1}{q}{r}{e}{L^p(\tau)} \\
+    \typ{\Gamma_2}{r}{q'}{e_1}{\tau'} \\
+    \typ{\Gamma_2, x_1:\tau, x_2:L^p(\tau)}{r+p}{q'}{e_2}{\tau'}}{
+    \typ{\Gamma_1, \Gamma_2}{q}{q'}{\matchc{e}{e_1}{x_1}{x_2}{e_2}}{\tau'}}
+    \end{mathpar}
+    \caption{Typing rules for lists and tick}
+    \label{fig:ty-lists-tick}
+\end{figure}
+Note that in the rule for \texttt{cons}, below the line we need $q+p$ here to make sure that the head is not getting potential from nowhere. Also in the rule for \texttt{matL}, above the line we are allowed to use $r+p$ potential to type $e_2$ since the head of the list carries $p$ potential.
+
+% Note that $r+p$ potential is since from the head
+% JT: I didn't write anything particular here, and I don't remember what this was about
+
+
+
+\section{Structural Rules and Subtyping}
+\subsection{Structural Rules}
+
+\begin{example}[Motivating Example]
+
+  Here is a simple type derivation:
+ \begin{mathpar}
+ \inferrule*{
+    \inferrule*{
+    \typ{x : L^{10}(\unitc)}{0}{0}{x}{L^{10}(\unitc)}
+    }{
+    \typ{x : L^{10}(\unitc)}{5}{0}{\tickc{5}{x}}{L^{10}(\unitc)}
+    }
+  }{
+    \typ{\cdot}{0}{0}{\lam{x}{L(\unitc)}{\tickc{5}{x}} }{L^{10}(\unitc)\xrightarrow{5|0}
+    L^{10}(\unitc)}
+  }
+ \end{mathpar}
+ In this type derivation, the first level must be obtained by weakening. This is necessary, since
+ we cannot apply directly the nil rule.
+ 
+ Similarly, for the following type derivation, we also need weakening:
+ \begin{mathpar}
+ \inferrule*{
+    \inferrule*{
+      \inferrule*{
+      \typ{\cdot}{0}{0}{[]}{L^{10}(\unitc)}
+      }{
+      \typ{x : L^{10}(\unitc)}{0}{0}{[]}{L^{10}(\unitc)}
+      }
+    }{
+    \typ{x : L^{10}(\unitc)}{5}{0}{\tickc{5}{[]}}{L^{10}(\unitc)}
+    }
+  }{
+    \typ{\cdot}{0}{0}{\lam{x}{L(\unitc)}{\tickc{5}{[]}}}{L^{10}(\unitc)\xrightarrow{5|0}
+    L^{10}(\unitc)}
+  }
+ \end{mathpar}
+
+\end{example}
+
+\begin{figure}
+    \begin{mathpar}
+    \inferrule[Weak]{\typ{\Gamma}{q}{q'}{e}{\tau'}}{\typ{\Gamma,x:\tau}{q}{q'}{e}{\tau'}}
+    \and
+    \inferrule[Relax]{\typ{\Gamma}{p}{p'}{e}{\tau'} \\ q \geq p \\ q - q' \geq p - p'}{
+    \typ{\Gamma}{q}{q'}{e}{\tau'}}
+    \end{mathpar}
+    \caption{Structural Rules}
+    \label{fig:struct-rules}
+\end{figure}
+The weakening rule states that one might add irrelevant things into the context,
+without effects on the result.
+
+The relaxing rule states that it is possible to start with and consume a little more resources
+than required.
+
+\subsection{Subtyping}
+
+Subtyping can be added to the language. The rules are given in Fig.~\ref{fig:subtyping}.
+
+\begin{figure}
+    \begin{mathpar}
+    \inferrule{\tau <: \tau' \\ \typ{\Gamma}{q}{q'}{e}{\tau}}{
+      \typ{\Gamma}{q}{q'}{e}{\tau'}}
+      \and
+      \inferrule{\tau <: \tau'' \\ \typ{\Gamma, x:\tau''}{q}{q'}{e}{\tau'}}{
+      \typ{\Gamma,x:\tau}{q}{q'}{e}{\tau'}}
+      \and
+      \inferrule{\tau <: \tau' \\ q \geq q'}{<\tau, q> <: <\tau', q'>}
+      \and
+      \inferrule{ }{\unitc <: \unitc}
+      \and
+      \inferrule{A <: B}{L(A) <: L(B)}
+      \and
+      \inferrule{A_2 <: A_1 \\ B_1 <: B_2}{A_1 \rightarrow B_1 <: A_2 \rightarrow B_2}
+    \end{mathpar}
+    \caption{Rules for subtyping}
+    \label{fig:subtyping}
+\end{figure}
+
+\section{Sharing}
+
+The current type system still has limitations, as shown by the following example.
+\begin{example}
+  Let us try to define and type the following function:
+  \begin{align*}
+    f =\ &\mathrm{fix~double}: L(\unitc) \rightarrow L(\unitc)~\mathrm{as}\\
+      &\quad \lambda x.~\mathrm{match}~x~\mathrm{with} \\
+      &\quad\quad [] \mapsto []\\
+      &\quad\quad y::ys \mapsto y::y::\mathrm{double}(ys)
+  \end{align*}
+  
+  Here, the affine type system is having trouble typing the function, as \(y\) is used
+  more than once.
+\end{example}
+
+To solve this issue, we introduce a new construct, "sharing".
+For instance, we can now write:
+\[
+  \lam{x}{L(\unitc)}{\share{x}{x_1}{x_2}{\mathrm{id}(x_1)::\mathrm{id}(x_2)::[]}}
+\]
+with the type
+\[
+L^4(\unitc) \xrightarrow{0|0} L^0(\unitc).
+\]
+
+We update our grammar accordingly:
+\[
+e ::= \dots | \share{e_1}{x_1}{x_2}{e_2}
+\]
+and the semantics:
+\begin{mathpar}
+\inferrule{e_1 \mapsto e_1'}{\share{e_1}{x_1}{x_2}{e_2} \mapsto \share{e_1'}{x_1}{x_2}{e_2}}
+\and
+\inferrule{e_1~\mathrm{val}}{\share{e_1}{x_1}{x_2}{e_2} \mapsto [e_1,e_1 / x_1, x_2]e_2}
+\end{mathpar}
+
+The static semantics have to be update by introducing a new symbol, \(\sharingsymbol\).
+The judgment \(\sharing{\tau}{\tau_1}{\tau_2}\) reads ``\(\tau\) is shared as \(\tau_1\) and
+\(\tau_2\)''.
+We give the new typing rule and the inductive definition of sharing in
+Fig.~\ref{fig:sharing}
+
+\begin{figure}
+    \begin{mathpar}
+    \inferrule{\typ{\Gamma_1}{q}{p}{e_1}{\tau} \\
+    \typ{\Gamma_2, x_1:\tau_1, x_2:\tau_2}{p}{q'}{e_2}{\tau'} \\
+    \sharing{\tau}{\tau_1}{\tau_2}}{
+    \typ{\Gamma_1, \Gamma_2}{q}{q'}{\share{e_1}{x_1}{x_2}{e_2}}{\tau}}
+    \and
+    \inferrule{ }{\sharing{A\rightarrow B}{A\rightarrow B}{A\rightarrow B}}
+    \and
+    \inferrule{\sharing{A}{A_1}{A_2}}{\sharing{L(A)}{L(A_1)}{L(A_2)}}
+    \and
+    \inferrule{\sharing{\tau}{\tau_1}{\tau_2} \\
+        q = q_1 + q_2}{
+        \sharing{<\tau,q>}{<\tau_1,q_1>}{\tau_2,q_2}}
+    \end{mathpar}
+    \caption{Updated rules for sharing}
+    \label{fig:sharing}
+\end{figure}
+
+The rules that define sharing enforce that no resource is created or lost when sharing.
+\begin{example}
+  \[
+  \sharing{L^4(L^2(\unitc))}{L^2(L^2(\unitc))}{L^2(L^0(\unitc))}
+  \]
+\end{example}
+
+\paragraph{Homework} Give a type derivation for
+\[
+  f = \lam{x}{L(\unitc)}{\mathrm{id}(\mathrm{double}(x))}
+\]
+
+Finally, we can still state \emph{progress} and \emph{preservation} for this type system.
+\begin{theorem}[Progress]If $\vdash^q_{q'} e:\tau$ and $p\geq q$ then either $e$ val or $<e, p> \mapsto <e', p'>$ for some $<e', p'>$.
+\end{theorem}
+
+\begin{theorem}[Preservation] 
+If $\vdash^q_{q'} e:\tau$, $p \geq q$, and $<e,p>\mapsto <e', p'>$ then $\vdash^{p'}_{q'} e':\tau$.
+\end{theorem}
+
+While the proof of progress is simple, the proof of preservation is complicated (involves a nested induction on the typing judgment and the semantic stepping).
+
+\end{document}
+\endinput

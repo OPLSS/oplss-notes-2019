@@ -1,7 +1,7 @@
 
 
 %%%% Generic manuscript mode
-\documentclass[ manuscript, review,screen, nonacm]{acmart}
+\documentclass[ manuscript,screen, nonacm]{acmart}
 
 \usepackage{amsmath}
 \usepackage{mathpartir}
@@ -18,7 +18,7 @@
 \begin{document}
 
 
-\title{Resource Analysis: Lecure 1}
+\title{Resource Analysis: Lecture 1}
 
 \author{Jan Hoffmann}
 \email{jhoffmann@cmu.edu}
@@ -26,68 +26,66 @@
 \maketitle
 
 
+\section{Motivation of resource analysis}
 
-\section{Motivation of resource analysis} 
-How do we compare two implementations of the same function? 
+Consider two implementations of the same (mathematical) function. 
+How do we compare these two implementations? By their efficiency:
 \begin{itemize}
-  \item efficiency
-  \begin{itemize}
-    \item time complexity
-    \item memory usage
-    \item power consumption
-  \end{itemize}
-  \item kinds of analysis we might be interested in
-    \begin{itemize}
-        \item worst-case analysis  
-        \item average-case analysis
-    \end{itemize} 
-  \item traditional tool: analysis of algorithms
-  \begin{itemize}
-      \item algorithms are usually defined in pseudocode, which leads to the following problems:
-      \begin{itemize}
-          \item algorithm description's relation to the actual implementation is unclear
-          \item cost model is not specified
-          \item the format of input is not specified
-          \item ...
-      \end{itemize}
-      \item Complexity is analyzed using big-O:
-    \begin{itemize}
-        \item recap: $f \in O(g)$ means $\exists n_0, c. \forall n \geq n_0. f(n)\leq cg(n)$.
-        \item some algorithms might have large constants thus are actually slow in practice
-       \item cannot distinguish algorithms with the same asymptotic behavior
-       \item no information on ``small'' inputs
-      \item  definitions are hard to generalize to multiple inputs
-     \end{itemize}
-  \end{itemize}
+  \item time complexity;
+  \item memory usage;
+  \item power consumption;
+  \item etc.
 \end{itemize}
 
-\section{Resource analysis}
-
+We can also consider two kinds of analyses:
 \begin{itemize}
-    \item in order to analyze programs (mathematical objects), we need
-    \begin{itemize}
-        \item syntax and static semantics
-        \item cost semantics
-    \end{itemize}
-    \item to take into account constant factors
-    \begin{itemize}
-        \item no other way but have to figure out the constants even we want to use big O eventually
-        \item want some help from proof rules, type systems, and other automation techniques to figure out the exact factors
-    \end{itemize}
-    \item bounds that come with certificates, i.e., proofs on how the bounds are obtained
+    \item worst-case analysis;
+    \item average-case analysis
 \end{itemize}
 
+Traditionally, these algorithm analyses are performed as follows:
+\begin{enumerate}
+    \item Define the algorithm in "pseudo-code". However, this comes with several limitations.
+    First, the algorithm description's relation to the actual implementation is unclear. For instance, the
+    pseudo-code might assume the existence of a data structure representing sets, and makes assumptions
+    on its implementation and the cost of using it. 
+    The cost model is also often not specified. 
+    Finally, the representation of the input is not necessarily explicit.
+    \item The complexity is analyzed using Big-O.
+    \begin{definition}[Big-O]\label{def:big-o}
+        Let \(f\) and \(g\) be a function from \(\mathbb{N}\) to \(\mathbb{N}\).
+        Then,
+        \[
+          f \in O(g) \triangleq \exists n_0, c, \forall n\geq n_0, f(n) \leq c g(n)
+        \]
+    \end{definition}
+    The notion of big-O also have limitations: algorithms might have large constants making them slow
+    in practice; big-O is an asymptotic notion, and it is impossible to compare programs on ``small''
+    inputs; it is also impossible to compare programs that have the same asymptotic behavior; and finally,
+    it is hard to generalize big-O to multiple inputs (\(O(mn)\) has no clear meaning).
+\end{enumerate}
 
-In this short course series we focus on functional languages, worst-case bounds, and automatic bound inference.
+\section{Resource Analysis}
 
+We are going to analyze programs as \emph{mathematical objects}. For this, we need to define
+\begin{itemize}
+    \item syntax and static semantics;
+    \item cost semantics.
+\end{itemize}
 
+In order to take into account the constant factors, we are going to define tools to help us: proof rules,
+type systems, and other automation techniques that will help us figure the exact factors.
+
+Finally, we want to obtain bounds that come with \emph{certificates}: proofs (proof derivations) that
+show how the bounds are obtained.
+
+In this short course series, we focus on functional languages, worst-case bounds, and automatic bound inference.
 
 \section{A simple language}
-
 \subsection{Syntax}
 
-Types and expressions are defined as follows:
-
+We consider a very simple language, for which we will define several kind of 
+cost semantics. Types and expressions are defined as follows:
 \begin{grammar}
 <Types> $\tau$ ::= $\arrc{\tau_1}{\tau_2}$ // function from $\tau_1$ to $\tau_2$, written as $\tau_1 \rightarrow \tau_2$
 \alt $\unitc$
@@ -99,19 +97,16 @@ Types and expressions are defined as follows:
 \end{grammar}
 
 Values are inductively defined as follows:
-
 \begin{mathpar}
     \inferrule{ }{ \trivc \text{ val} }
     \and
     \inferrule{  }{ \lam{x}{\tau}{e} \text{ val}}
 \end{mathpar}
 
+We are now ready to describe several cost semantics for this language.
+\subsection{First Option: Structural Dynamics (or Small-Step Semantics)}
 
-
-
-\subsection{ Cost semantics $I$: structural dynamics (also known as small-step semantics)}
-
-$e \mapsto e'$ means expression $e$ evaluates to $e'$ in one step.
+We define the following judgment: $e \mapsto e'$ means expression $e$ evaluates to $e'$ in one step.
 
 \begin{figure}[htb]
     \begin{mathpar}
@@ -125,25 +120,40 @@ $e \mapsto e'$ means expression $e$ evaluates to $e'$ in one step.
     \label{fig:small-step}
 \end{figure}
 
-
-
-Definition: let $e:\tau$, the evaluation cost of $e$ is $n$ if $e \mapsto ^n v$ or $\infty$ otherwise.
-
+\begin{definition}[Evaluation cost in the small-step semantics]\label{def:cost-small-step}
+Let $e:\tau$ be an expression. The \emph{evaluation cost} of $e$ is:
+\begin{itemize}
+    \item $n$ if $e \mapsto ^n v$
+    \item $\infty$ otherwise
+\end{itemize}
+\end{definition}
 Note that here the evaluation is deterministic and unique, so the cost definition makes sense.
 
-Here we also assume that all steps cost the same as a simplification, but in reality this is not necessarily the case.
+Here we also assume that all steps cost the same as a simplification, but in reality this is not necessarily the case. For instance, the substitution operation traverses the whole expression, and it would be legitimate
+to give it a higher cost.
 
-\subsection{Evaluation dynamics (also known as big-step semantics)}
+\subsection{Second Option: Evaluation Dynamics (also Known as Big-Step Semantics)}
 
-We define the following notations:
+The traditional way of defining big-step semantics, \(\eval{e}{}{v}\), do not capture cost.
+The first idea is to define a big-step semantics with a new component \(q \in \mathbb{Q}\), that vary during
+the execution and represents the cost of the evaluation:
+\[
+ \eval{e}{q}{v}
+\]
+This judgment reads ``expression $e$ evaluates to value $v$, costing $q$''.
 
-$\eval{e}{q}{v}$: expression $e$ evaluates to value $v$, and this costs $q$.
+In fact, we will go a step further and add a \emph{metric} \(M\):
+\[
+  \evalenv{V}{M}{e}{q}{v}
+\]
+This judgment means that under environment $V: \mathrm{Vars} \rightarrow \mathrm{Vals}$, with cost metric $M$,
+expression $e$ evaluates to value $v$ with cost $q \in \mathbb{Q}$.
 
-
-$\evalenv{V}{M}{e}{q}{v}$: under environment $V: \mathrm{Vars} \rightarrow \mathrm{Vals}$, with cost metric $M$, expression $e$ evaluates to val $v$ with cost $q \in \mathbb{Q}$.
-
-$M: \{ \text{unit, app, lam, var} \} \rightarrow \mathbb{Q}$: cost metric that maps each operation to a rational cost value. Here costs could be negative, indicating that more resources are becoming available.
-
+Here, \(M\) is a cost metric that maps each operation to a rational cost value.
+\[
+M: \{ \text{unit, app, lam, var} \} \rightarrow \mathbb{Q}
+\] 
+Costs could be negative. This can be used to indicate that some resources are becoming available.
 
 Rules are given in Fig.~\ref{fig:eval-sem}.
 \begin{figure}[htb]
@@ -163,8 +173,8 @@ Rules are given in Fig.~\ref{fig:eval-sem}.
 \label{fig:eval-sem}
 \end{figure}
 
-What metric $S$ should we use?
 
+Here is an example of metric \(S\) we could use:
 \begin{align}
 \costof{S}{app}&=1 \\
 \costof{S}{unit} &=0 \\
@@ -172,24 +182,31 @@ What metric $S$ should we use?
 \costof{S}{lam} &=0
 \end{align}
 
-Using cost metric $S$, for all $e:\tau$ we can prove that $e \mapsto^n v$ iff $\vdash _S e \Downarrow^n v$
+Using this cost metric $S$, we can prove the following theorem: 
+\begin{theorem}[Equivalence between big-step and small-step cost semantics]\label{eq-big-small}
+  For any expression \(e : \tau\),
+  \[
+  e \mapsto^n v \iff \vdash_S e \Downarrow^n v
+  \]
+\end{theorem}
 
+\paragraph{High-water mark} We want to analyze the resource consumption of a stack-based process.
+The number of occupied stack cells changes as time goes by, but at the end, everything 
+is deallocated, and the cost goes back to \(0\). 
+We are instead more interested in knowing the maximum amount of stack that
+was used, at any point in the execution: this is the \emph{high-water mark}.
+We may not use the previous two cost semantics to study the high-water mark.
+%
+The next two subsections are dedicated to describing cost semantics that 
+can be used to study this high-water mark.
 
+\subsection{Third Option: Resource Safety}
 
-\section{High-water mark}
+The judgment for resource safety, 
+\[\evalwatermark{V}{M}{q}{q'}{e}{v},\]
+means that under environment $V$, metric $M$, and given that $q$ resources are available, expression $e$ evaluates to value $v$, and $q'$ resource are available afterwards (we always require $q,q'\geq 0$; otherwise, it doesn't make sense).
 
-When resources come and go we want to know the high-water mark within the process.
-
-An example is stack usage. The number of stack cells we occupied changes as time goes by, but we are most interested in the highest stack usage in the process.
-
-For this purpose, notice that $V \vdash_M e \Downarrow ^q v$ (where $q$ acts like net cost) is not what we want.
-
-We give two options in the following subsections.
-
-\subsection{ Resource safety}
-$\evalwatermark{V}{M}{q}{q'}{e}{v}$: under environment $V$, metric $M$, and given that $q$ resources are available, expression $e$ evaluates to value $v$, and $q'$ resource are available afterwards (we always require $q,q'\geq 0$ or it doesn't make sense)
-
-Semantics are show in Fig.~\ref{fig-semReSafety}.
+Semantics are shown in Fig.~\ref{fig-semReSafety}.
 
 \begin{figure}[htb]
 \begin{mathpar}
@@ -234,21 +251,28 @@ We can prove the following results regarding resource safety.
 Let $\evalwatermark{V}{M}{q}{q'}{e}{v}$ and $\evalwatermark{V}{M}{p}{p'}{e}{v'}$  
 then $q-q'=p-p'$ and $v=v'$.
 \end{lemma} 
-\begin{theorem}
+\begin{theorem}[Resource Safety Implies Big-Step]\label{resource-safety-big}
 If $\evalwatermark{V}{M}{q}{q'}{e}{v}$ then $\evalenv{V}{M}{e}{q-q'}{v}$.
 \end{theorem} 
-Note that the theorem is NOT saying: $\evalenv{V}{M}{e}{c}{v}$ implies $\evalwatermark{V}{M}{c}{0}{e}{v}$. 
+Note that the theorem is \emph{not} saying: $\evalenv{V}{M}{e}{c}{v}$ implies $\evalwatermark{V}{M}{c}{0}{e}{v}$. 
 
-\subsection{ Resource monoid}
-$\evalmono{V}{M}{e}{v}{q}{q'}$: $q$ is the high-water mark and $q'$ is left-over resources ($q, q' \geq 0$).
+\subsection{Fourth Option: Resource Monoid}
+Combining resource analysis is not straightforward: the high-water mark of a sequential
+composition is neither the sum of the high-water marks, or the second high-water
+mark.
 
+To handle this, we consider a judgment of the following form:
+\[
+\evalmono{V}{M}{e}{v}{q}{q'}.
+\]
+In this judgment, $q$ is the high-water mark and $q'$ is the quantity of left-over resources ($q, q' \geq 0$).
 
 \begin{figure}[htb]
 \centering
 \begin{mathpar}
 \inferrule
 {
-    M(var)\geq 0
+    \costof{M}{var} \geq 0
 }
 {
     \evalmono{V}{M}{x}{V(x)}{\costof{M}{var}}{0} 
@@ -256,7 +280,7 @@ $\evalmono{V}{M}{e}{v}{q}{q'}$: $q$ is the high-water mark and $q'$ is left-over
 \and
 \inferrule
 {
-    M(var)< 0
+    \costof{M}{var} < 0
 }
 {
     \evalmono{V}{M}{x}{V(x)}{0}{-\costof{M}{var}}
@@ -266,7 +290,7 @@ $\evalmono{V}{M}{e}{v}{q}{q'}$: $q$ is the high-water mark and $q'$ is left-over
 
 \inferrule
 {
-    M(app)\geq0 \and
+    \costof{M}{app} \geq0 \and
     V \vdash_M e_1 \Downarrow \lambda(x:\tau)e \mid (q,q')  \and
     V\vdash_M e_2 \Downarrow v_2 \mid (p, p')
     \and
@@ -281,7 +305,7 @@ $\evalmono{V}{M}{e}{v}{q}{q'}$: $q$ is the high-water mark and $q'$ is left-over
  \label{fig:sem-resource-monoid}
 \end{figure}
 
-Homework: define the operator $\cdot$: $(p,p') \cdot (q,q') = ?$ so that the following theorem holds
+\paragraph{Homework} define the operator $\cdot$: $(p,p') \cdot (q,q')$ so that the following theorem holds.
 
 \begin{theorem}
 \begin{enumerate}
