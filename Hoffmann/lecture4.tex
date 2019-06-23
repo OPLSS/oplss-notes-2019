@@ -16,11 +16,19 @@
 \newcommand{\ldash}[2]{\vdash^{\hspace{-.4em}#1}_{\hspace{-.4em}#2}}
 
 \title{Resource Analysis \\ \Large{Lecture 4}} 
+\author{Renate Robin Eilers  \and Cristina Matache \and Baber Rehman}
+
+\date{June 22, 2019}
 
 \begin{document}
 
 \maketitle
+
+This is the fourth talk presented by Jan Hoffmann in OPLSS 2019, University of Oregon, USA.
+
 \section{Recap: Soundness}
+
+This talk is mainly about soundness proof, type inference, and examples in RAML. Talk started by a recap of progress and preservation which were formulated in last talk.
 
 \begin{theorem}[Progress]
 If $\ldash{q}{q'} e : \tau $ and $p \geq q$ then either $e$ is a value or $\exists e',p'$ s.t. $\langle e,p \rangle \mapsto \langle e',p'\rangle$.
@@ -30,7 +38,8 @@ If $\ldash{q}{q'} e : \tau $ and $p \geq q$ then either $e$ is a value or $\exis
 If $\ldash{q}{q'} e : \tau$ , $p \geq q$ and   $\langle e,p \rangle \mapsto \langle e',p'\rangle$ then $\ldash{p'}{q'} e': \tau$.
 \end{theorem}
 \begin{proof}[Proof notes]
-  Proved by nested induction on $\ldash{q}{q'} e : \tau$ and $\langle e,p \rangle \mapsto \langle e',p'\rangle$.
+  Preservation is difficult to prove. It is proved by nested induction on $\ldash{q}{q'} e : \tau$ and $\langle e,p \rangle \mapsto \langle e',p'\rangle$.
+  There are some tricky lemmas to prove like substitution which only holds on values.
 \end{proof}
 
 \paragraph{Alternative soundness theorem:}
@@ -98,7 +107,7 @@ For type inference we need algorithmic (or syntax-directed) rules. We change all
 
 Algorithm for type inference:
 \begin{enumerate}
-\item Infer usual tpyes (without annotations), which results in a type derivation (like example in figure~\ref{fig:type-inference-example} with all annotations removed);
+\item Infer usual types (without annotations), which results in a type derivation (like example in figure~\ref{fig:type-inference-example} with all annotations removed);
 \item Add potential variables where a potential annotation is required,  both in $\tau_{id}$ and in the derivation. See figure~\ref{fig:type-inference-example-vars}. Note the this step is only partially done in the figure;
   \begin{equation*}
     \tau_{id} \text{ becomes } L^p(unit) \rightarrow^{q/q'} L^{p'}(unit)
