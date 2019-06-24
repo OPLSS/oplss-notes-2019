@@ -1,19 +1,15 @@
 \documentclass{article}
-\usepackage[utf8]{inputenc}
-\usepackage[hyphens]{url} 
-\usepackage[breaklinks]{hyperref}
 \usepackage{amsmath,amsthm,stmaryrd,amssymb}
-\usepackage{bussproofs}
-\usepackage{listings}
-\usepackage{tikz}
-\usepackage{rotating}
-\usetikzlibrary{matrix,patterns}
+\usepackage{mathpartir}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{definition}{Definition}[theorem]
 \newtheorem{example}{Example}
 
-\newcommand{\ldash}[2]{\vdash^{\hspace{-.4em}#1}_{\hspace{-.4em}#2}}
+\newcommand{\pack}[4]{\texttt{pack}(#1,\ #2)\ \texttt{as}\ \exists#3.#4}
+\newcommand{\unpack}[4]{\texttt{unpack}(#1,\ #2)=#3\ \texttt{in}\ #4}
+\newcommand{\letin}[3]{\texttt{let}\ #1=#2\ \texttt{in}\ #3}
+\newcommand{\ifzero}[3]{\texttt{if}0\ #1\ #2\ #3}
 
 \title{Secure Compilation \\ \Large{Lecture 2}} 
 \author{Renate Robin Eilers  \and Cristina Matache \and Baber Rehman}
@@ -34,10 +30,20 @@ This is the second talk presented by Amal Ahmed in OPLSS 2019, University of Ore
 
 We just have integers and functions in source language. \\
 
-$\sigma$ ::= int \textbar \hspace{0.1cm} $\sigma_1$ $\rightarrow$ $\sigma_2$
+$\sigma$ ::= int \textbar \hspace{0.1cm} $\sigma_1$ $\rightarrow$ $\sigma_2 ::= $
 
 \subsubsection{Terms}
 
 \subsection{Target Language}
 
+\begin{align*}
+  v &::= \pack{\tau}{v}{\alpha}{\tau} \\
+  e &::= \ifzero{v}{e_1}{e_2} \mid \unpack{\alpha}{x}{v_1}{e_1} \mid \letin{x}{e_1}{e_2}
+\end{align*}
+
 \end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
