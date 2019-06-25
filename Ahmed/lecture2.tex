@@ -1,0 +1,202 @@
+\documentclass{article}
+\usepackage{amsmath,amsthm,stmaryrd,amssymb}
+\usepackage{mathpartir}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}{Definition}[theorem]
+\newtheorem{example}{Example}
+\newtheorem{lemma}[theorem]{Lemma}
+
+\newcommand{\pack}[4]{\mathtt{pack}(#1,\ #2)\ \mathtt{as}\ \exists#3.#4}
+\newcommand{\packs}[3]{\mathtt{pack}(#1,\ #2)\ \mathtt{as}\ #3}
+\newcommand{\unpack}[4]{\mathtt{unpack}(#1,\ #2)=#3\ \mathtt{in}\ #4}
+\newcommand{\letin}[3]{\mathtt{let}\ #1=#2\ \mathtt{in}\ #3}
+\newcommand{\ifzero}[3]{\mathtt{if}0\ #1\ #2\ #3}
+
+\title{Secure Compilation \\ \Large{Lecture 2} \\ Closure Conversion} 
+\author{Renate Robin Eilers  \and Cristina Matache \and Baber Rehman}
+
+\date{June 24, 2019}
+
+\begin{document}
+
+\maketitle
+
+This is the second talk presented by Amal Ahmed in OPLSS 2019, University of Oregon, USA.
+
+
+\section{Source Language}
+
+\paragraph{Types}
+
+We just have integers and function in source language. \\
+
+\begin{equation*}
+  \sigma ::= int \mid \sigma_1\rightarrow\sigma_2
+\end{equation*}
+
+\paragraph{Terms}
+
+\begin{align*}
+  v &::= x \mid n \mid \lambda x:\sigma.e \\
+  e &::= v \mid \ifzero{v}{e_1}{e_2} \mid v_1\ v_2 \mid \letin{x}{e_1}{e_2}
+\end{align*}
+
+So $e_1\ e_2$ is a shorthand for $\letin{x}{e_1}{\letin{y}{e_2}{x\ y}}$.
+
+\paragraph{Evaluation contexts:}
+
+\begin{equation*}
+  E ::= [\cdot] \mid \letin{x}{E}{e_2}
+\end{equation*}
+
+The language has a typing judgement $\Gamma \vdash e:\sigma$ and a small-step call-by-value operational semantics $e \mapsto e'$.
+
+\section{Target Language}
+
+\paragraph{Types and terms}
+
+\begin{align*}
+  \tau &::= int \mid (\tau_1,\ldots,\tau_n)\rightarrow \tau' \mid \langle \tau_1,\ldots,\tau_n\rangle \mid \alpha \mid \exists\alpha.\tau \\
+  v &::= x \mid n \mid \lambda(\overline{x:\tau}).e \mid \langle v_1,\ldots,v_n\rangle \mid \pack{\tau}{v}{\alpha}{\tau} \\
+  e &::= v \mid \ifzero{v}{e_1}{e_2} \mid v_1\ (\overrightarrow{v}) \mid \pi_i\;v \mid \unpack{\alpha}{x}{v}{e_1} \mid \letin{x}{e_1}{e_2}
+\end{align*}
+
+\paragraph{Typing contexts:}
+\begin{align*}
+  \Delta &::= \cdot \mid \Delta,\alpha \\
+  \Gamma &::= \cdot \mid \Gamma,x:\tau         
+\end{align*}
+
+\paragraph{Typing judgements:} $\Delta,\Gamma\vdash e :\tau$
+
+To do closure conversion, we want functions to have a closed body:
+\begin{gather*}
+  \inferrule{\cdot \mid \overline{x:\tau} \vdash e : \tau'}{\Delta;\Gamma \vdash \lambda(\overline{x:\tau}).e : (\overrightarrow{\tau})\rightarrow\tau'} \\
+  \inferrule{\Delta;\Gamma \vdash v : \tau[\tau'/\alpha]}{\Delta;\Gamma \vdash \pack{\tau'}{v}{\alpha}{\tau} : \exists\alpha.\tau}
+\end{gather*}
+
+\begin{example}
+  A term of type $\exists\alpha.\;\alpha\times(\alpha\rightarrow int)$ is:
+  \begin{equation*}
+    w = \pack{bool}{\langle true,\ \lambda x:bool.5\rangle}{\alpha}{\alpha\times(\alpha\rightarrow int)}
+  \end{equation*}
+\end{example}
+
+\begin{equation*}
+  \inferrule{\Delta;\Gamma \vdash v: \exists\alpha.\tau \\ \Delta,\alpha;\Gamma,x:\tau\vdash e_2: \tau_2 \\ \Delta\vdash\tau_2}{\Delta;\Gamma\vdash \unpack{\alpha}{x}{v}{e_2} :\tau_2}
+\end{equation*}
+In the rule above $\alpha$ is not allowed to appear in $\tau_2$.
+
+\begin{example}
+  A well-typed term is:
+  \begin{equation*}
+    \unpack{\alpha}{x}{w}{(\pi_2\ x)\ (\pi_1\ x)}
+  \end{equation*}
+  where $w$ is defined as in the previous example.
+\end{example}
+
+\section{Translation}
+
+\paragraph{Translation of types:} $\sigma^+$
+
+\begin{align*}
+  int_S^+ &= int_T \\
+  (\sigma_1\rightarrow\sigma_2)^+ &= \exists\alpha_{env}.\;\langle(\alpha_{env},\;\sigma_1^+)\rightarrow\sigma_2^+,\ \alpha_{env}\rangle
+\end{align*}
+
+
+\paragraph{Typing context translation:} $\Gamma_S^+$
+\begin{align*}
+  (\cdot)^+ &= \cdot \\
+  (\Gamma_S,x_S:\sigma)^+ &= \Gamma_S^+,x_T:\sigma^+
+\end{align*}
+
+\paragraph{Term translation:} $\Gamma_S \vdash e_S : \sigma\rightsquigarrow e_T$ where $\cdot;\Gamma_S^+\vdash e_T:\sigma^+$
+
+\begin{gather*}
+  \inferrule{\Gamma_S(x_S)=\sigma}{\Gamma_S\vdash x_S:\sigma \rightsquigarrow x_T} \qquad
+  \inferrule{\ }{\Gamma_S \vdash n_S : int_S \rightsquigarrow n_T} \\
+  \inferrule{y_{S_1},\ldots,y_{S_n}= \text{free variables}(\lambda x_S:\sigma.e_S) \\ \Gamma_S\vdash y_{S_i} : \sigma_i \\ v_{code}=\lambda(z_T:\langle\sigma_1^+,\ldots,\sigma_n^+\rangle).e_T[(\pi_i\;z)/y_{T_i}] \\ \Gamma_S,x_S:\sigma \vdash e_S : \sigma \rightsquigarrow e_T}{\Gamma_S \vdash \lambda x_S:\sigma.e_S : \sigma\rightarrow \sigma' \rightsquigarrow \packs{\langle\sigma_1^+,\ldots,\sigma_n^+\rangle}{\langle v_{code},\;\langle y_{T_1},\ldots,y_{T_n}\rangle\rangle}{(\sigma\rightarrow\sigma')^+}}
+\end{gather*}
+where $e_T[(\pi_i\;z)/y_{T_i}]$ is a shorthand for
+\begin{equation*}
+  \letin{y_{T_1}}{\pi_1\ z}{\ldots \letin{y_{T_n}}{\pi_n\ z}{e_T}}
+\end{equation*}
+
+\begin{equation*}
+  \inferrule{\Gamma_S\vdash v_{S_2} : \sigma_2 \rightsquigarrow v_{T_2} \\ \Gamma_S \vdash v_{S_1}: \sigma_2 \rightarrow \sigma \rightsquigarrow v_{T_1}}{\Gamma_S \vdash v_{S_1}\ v_{S_2} : \sigma \rightsquigarrow \unpack{\alpha}{p}{v_{T_1}}{(\pi_1\;p)\ (\pi_2\;p,\ v_{T_2})}}
+\end{equation*}
+
+The rules for $\mathtt{if}0$ and $\mathtt{let}$ are defined according to the structure of the terms.
+
+\section{Preservation Theorem}
+
+\begin{theorem}[Type Preservation]
+If $\Gamma$ $\vdash$ $e_S$ : $\sigma$ and  $\Gamma$ $\vdash$ $e_S$ : $\alpha$ $\rightsquigarrow$ $e_T$ then $\Gamma_S^+$ $\vdash$ $e_T$ : $\sigma^+$
+\end{theorem}
+
+For correctness, we want to show $e_S$ $\approx$ $e_T$. This is not contexual equivalance because source language and target language are two different languages.
+There are many ways to prove compiler correction. We want to say that:
+\begin{center}
+ when $e_S$ $\approx$ $e_T$ then $\sigma$ $\approx$ $\sigma^+$
+\end{center}
+
+\section{Logical Relations}
+
+In logical relations we map related input to related outputs. Same source value and target value are related.
+
+\paragraph{Values}
+
+V$\llbracket$$\sigma$$\rrbracket$  = \{($v_S$ , $v_T$)  $\mid$ $\cdot$ $\vdash$ $v_{S}$:$\sigma$ $\wedge$ $\cdot$ ; $\cdot$ $\vdash$ $v_{T}$:$\sigma^+$ ..... \}
+
+\paragraph{Integers}
+	
+V$\llbracket$ints$\rrbracket$ = \{($n_S$ , $n_T$)\}
+
+\paragraph{Function}	
+
+V$\llbracket$$\sigma_1$$\rightarrow$$\sigma_2$$\rrbracket$ = \{($\lambda$x:$\sigma_1$ $\cdot$ $e_S$ $\mathtt{pack}$ ($\tau_{env}$ , $\langle$ $\lambda$ (Z:$\tau$,$x_{T}$:$\sigma_1^+$) $\cdot$ $e_T$,$V_{env}$ $\rangle$ )  $\mid$ $\forall$($v_S$ , $v_T$) $\mathcal{E}$ V$\llbracket$$\sigma_1$$\rrbracket$ . ($e_S$[$v_s$/$x_s$],$e_T$ [$v_{env}$/z,$v_T$/$x_T$]) $\in$ $\mathcal{E}$ $\llbracket$$\sigma_2$$\rrbracket$\}
+
+\paragraph{Typing Judgement }
+
+$\mathcal{E}$ $\llbracket$$\sigma$$\rrbracket$ = \{($e_S$,$e_T$) $\cdot$ $\vdash$ $e_S$:$\sigma$ $\wedge$ 
+$\cdot$ ; $\vdash$$e_T$:$\sigma^+$ $\wedge$ 
+$\forall$$v_S$ $\cdot$ $e_S$ $\longmapsto^*$ $v_S$ $\Rightarrow$ $\exists$$v_T$ $\cdot$ $e_T$ $\rightarrow^*$ $v_T$ $\wedge$ 
+($v_S$ , $v_T$) $\in$ v $\llbracket$$\sigma$$\rrbracket$ $\wedge$ 
+$\forall$$v_T$ $\cdot$ $e_T$ $\longmapsto^*$ $v_T$ $\Rightarrow$ $\exists$$v_S$ $\cdot$ $e_S$ $\longmapsto^*$ $v_S$ $\wedge$ 
+($v_S$,$v_T$) $\in$ v $\llbracket$$\sigma$$\rrbracket$\} \\
+
+Target language behavious is shown in source language.
+
+\theoremstyle{definition}
+\begin{definition}
+$\Gamma_S$ $\vdash$ $e_S$ $\approx$ $e_T$:$\sigma$ = $\Gamma_S$ $\vdash$ $e_S$:$\sigma$ $\wedge$ $\cdot$ ; $\Gamma_S^+$ $\vdash$ $e_T$:$\sigma^+$ $\wedge$ 
+$\forall$($\gamma_S$,$\gamma_T$) $\in$ $\mathcal{G}$ $\llbracket$$\sigma$$\rrbracket$ $\cdot$ ($\gamma_S$($e_S$),$\gamma_T$($e_T$)) $\in$ $\mathcal{E}$ $\llbracket$$\sigma$$\rrbracket$. \\ \\
+S and T are like holes in expression. They are not complete program. This is like substitution and linking. It will be combined with other code. \\ \\
+$\gamma_S$ = \{$x_{S1}$ $\longmapsto$ $v_{S1}$ .... \} \\
+$\gamma_T$ = \{$x_{T1}$ $\longmapsto$ $v_{T1}$ .... \} \\ \\
+$\mathcal{G}$$\llbracket$$\cdot$$\rrbracket$ = \{$\phi$ $\cdot$ $\phi$\} \\
+$\mathcal{G}$$\llbracket$$x_S$:$\sigma$$\rrbracket$ = \{($\gamma_S$[$x_S$ $\longmapsto$ $v_S$] , $\gamma_T$[$x_T$ $\longmapsto$ $v_T$])
+ $\mid$ ($\gamma_S$,$\gamma_T$) $\in$ $\mathcal{G}$$\llbracket$$x_S$:$\Gamma$$\rrbracket$ $\wedge$ ($v_S$,$v_T$) $\in$ V$\llbracket$$x_S$:$\sigma$$\rrbracket$\}
+
+
+\end{definition}
+
+\begin{theorem}[Compiler Correctness]
+If $\Gamma_S$ $\vdash$ $e_S$:$\sigma$ $\rightsquigarrow$ $e_T$ then $\Gamma$ $\vdash$ $e_S$ $\approx$ $e_T$:$\sigma$.
+\end{theorem}
+\begin{proof}
+This theorem can be proved by induction on typing derivation of source language. It can be proved just by unfoalding the definitions.
+\end{proof}
+
+\begin{lemma}[Fundamental Property]
+$\Gamma$ $\vdash$ $e_S$:$\sigma$ $\Rightarrow$ $\Gamma$ $\vdash$ $e_S$ $\approx$ $e_T$:$\sigma$
+\end{lemma}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
