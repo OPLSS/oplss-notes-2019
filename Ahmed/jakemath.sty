@@ -1,0 +1,407 @@
+\NeedsTeXFormat{LaTeX2e}[1996/06/01]
+\ProvidesPackage{jakemath}[2017/03/20 Jake's Math Library]
+
+%%%%% PACKAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\RequirePackage{geometry}
+\RequirePackage{amsmath,amssymb,amsthm}
+\RequirePackage{bbm}
+\RequirePackage{hyperref}
+\RequirePackage{environ}
+\RequirePackage{tikz}
+\RequirePackage{tikz-qtree}
+\RequirePackage{textcomp}
+\RequirePackage{cancel}
+\RequirePackage{mathtools}
+\RequirePackage{proof}
+\RequirePackage[normalem]{ulem}
+
+% For \reallywidehat command
+\RequirePackage{scalerel,stackengine}
+
+%%%%%%%%%%% OPTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%% GENERAL FORMATTING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\DeclareOption{geometry}{%
+    % Page size and margins
+    \geometry{%
+        letterpaper,
+        margin=2.0cm,
+    }
+}
+
+\DeclareOption{questions}{%
+    \renewcommand{\thesection}{%
+        Question \arabic{section}%
+    }
+    \newcommand{\question}{\section}
+}
+
+\ProcessOptions\relax
+
+%%%%%%%%%% MAIN LIBRARY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%% ENVIRONMENTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\myenvironment{\@star@or@long\provide@environment}
+\def\provide@environment#1{%
+  \@ifundefined{#1}%
+  {\def\reserved@jake@a{\newenvironment{#1}}}%
+  {\def\reserved@jake@a{\renewenvironment{#1}}}%
+  \reserved@jake@a
+}
+
+%%%%% FONTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Quadrata font
+\newcommand{\qdfont}{pnc}
+\newcommand{\textqd}[1]{%
+  {%
+    \fontfamily{\qdfont}\selectfont#1%
+  }%
+}
+\newcommand{\mathqd}[1]{%
+  {%
+    \text{\fontfamily{\qdfont}\selectfont#1}%
+  }%
+}
+
+
+%%%%% TIKZ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Import common tikzlibraries to be sure.
+\usetikzlibrary{calc,graphs,arrows,fit}
+
+% Make arrow tips look nicer, and always shorten the ends.
+\tikzset{
+    shorten >=1pt,
+    >=stealth', % this tip is provided by `arrows` !
+}
+
+\newcounter{CentroidCalculationDummy}
+
+% Compute the centroid of a sequence of points.
+\newcommand{\centroid}[2]{
+    % The first argument is the name of the coordinate in which to store the
+    % centroid.
+    % The second argument is a comma-separated sequence of coordinates (or
+    % nodes)
+    % e.g. \centroid{A}{(1),(2),(3)}
+    % will compute the center of the triangle 1-2-3 and store it into a
+    % coordinate that can be referred to by (A) after.
+
+    \setcounter{CentroidCalculationDummy}{0}
+
+    \coordinate (acc) at (0, 0) ;
+
+    \foreach \p in {#2} {
+        \draw (acc) ++\p coordinate (acc) ;
+        \stepcounter{CentroidCalculationDummy}
+    }
+
+    \pgfmathsetmacro\a{1 / \arabic{CentroidCalculationDummy}}
+    \path (acc) ;
+    \pgfgetlastxy{\x}{\y}
+    \coordinate (#1) at (\a * \x, \a * \y) ;
+}
+
+%%%%% THEOREM-LIKE ENVIRONMENTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Actual theorem-like things
+\newtheorem{thm}{Theorem}
+\newtheorem*{thm*}{Theorem}
+\newtheorem{prop}{Proposition}
+\newtheorem*{prop*}{Proposition}
+\newtheorem{lem}{Lemma}
+\newtheorem*{lem*}{Lemma}
+\newtheorem{cor}{Corollary}
+\newtheorem*{cor*}{Corollary}
+
+% Definitions and examples use the "definition style", where the text is
+% written in roman and not in italic.
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}% [section] % don't want them grouped by sections
+\newtheorem*{defn*}{Definition}% [section] % don't want them grouped by sections
+\newtheorem{eg}{Example}
+\newtheorem*{eg*}{Example}
+
+% Remarks use the remark style, where the word "remark" is shown in a less
+% invasive way.
+\theoremstyle{remark}
+\newtheorem{rem}{Remark}% [section] % don't want grouping by sections
+\newtheorem*{rem*}{Remark}% [section] % don't want grouping by sections
+
+% Solutions to exercises
+\myenvironment{solution}{
+    \let\oldqedsymbol=\qedsymbol%
+    \def\@addpunct##1{}%
+    \renewcommand{\qedsymbol}{$\blacktriangleleft$}%
+    \begin{proof}[\textit Solution.]
+}{
+    \end{proof}%
+    \renewcommand{\qedsymbol}{\oldqedsymbol}
+}
+
+\newcommand{\omittedproof}{%
+    \begin{proof}
+        Omitted.
+    \end{proof}
+}
+
+%%%%% MATHEMATICAL SHORTHANDS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Misc math operators
+\newcommand{\parens}[1]{\left(#1\right)}
+\newcommand{\bracks}[1]{\left[#1\right]}
+\newcommand{\abs}[1]{\left\lvert#1\right\rvert}
+\newcommand{\setof}[1]{\left\{#1\right\}}
+\newcommand{\Union}{\bigcup}
+\newcommand{\union}{\cup}
+\newcommand{\Intersn}{\bigcap}
+\newcommand{\intersn}{\cap}
+\newcommand{\join}{\lor}
+\newcommand{\meet}{\land}
+\renewcommand{\Join}{\bigvee}
+\newcommand{\Meet}{\bigwedge}
+\newcommand{\symdiff}{\mathbin{\Delta}}
+\ifdef{\fact}{
+\renewcommand{\fact}{!\,}
+}{
+\newcommand{\fact}{!\,}
+}
+\newcommand{\given}{\;\vert\;}
+\newcommand{\sth}{\;\vert\;}
+\newcommand{\compl}{^c}
+\newcommand{\inv}{^{-1}}
+\newcommand{\restrictto}{\upharpoonright}
+\newcommand{\preimage}[1]{^{-1}\parens{\setof{#1}}}
+\DeclareMathOperator{\rngOp}{range}
+\newcommand{\rng}[1]{\rngOp{\parens{#1}}}
+\newcommand{\compose}{\circ}
+\newcommand{\range}[2][1]{%
+    \def\temp{#2}
+    \ifx\temp\empty
+    \setof{#1,\ldots}
+    \else
+    \setof{#1,\ldots,#2}
+    \fi
+}
+\newcommand{\nset}[1][n]{\bracks{#1}}
+\newcommand{\infsum}{\sum^\infty}
+\renewcommand{\d}{\mathrm{d}}
+\newcommand{\intd}{\;\d}
+\newcommand{\nderiv}[2]{%
+    \ensuremath
+    \frac{\d^{#1}}{\d {#2}^{#1}}
+}
+\newcommand{\deriv}[2][]{%
+    \ensuremath
+    \frac{\d #1}{\d #2}
+}
+\newcommand{\upto}{\mathbin{\uparrow}}
+\newcommand{\fromleft}{^-}
+\newcommand{\infinfint}{%
+    \ensuremath \int_{-\infty}^{\infty}
+}
+\newcommand{\intfrominf}{%
+    \ensuremath \int_{-\infty}
+}
+\newcommand{\inttoinf}{%
+    \ensuremath \int^{\infty}
+}
+\newcommand{\evaluated}[2][]{
+    \def\temp{#1}
+    \ifx\temp\empty
+    \Big\vert_{#2}
+    \else
+    \Big\vert_{#1}^{#2}
+    \fi
+}
+\DeclarePairedDelimiter{\pair}{\langle}{\rangle}
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
+\newcommand{\proves}{\vdash}
+\renewcommand{\models}{\vDash} % \models is in core latex, but is ugly
+\newcommand{\entails}{\vDash}
+\newcommand{\forces}{\Vdash}
+\DeclareMathOperator{\domOp}{dom}
+\newcommand{\dom}[1]{\domOp{\parens{#1}}}
+\newcommand{\qmark}[1]{\overset{?}{#1}}
+\newcommand{\incompatible}{\perp}
+\newcommand{\stmt}[1]{\text{``#1''}}
+\DeclareMathOperator{\psetOp}{\mathcal{P}}
+\newcommand{\pset}[1]{\psetOp{\parens{#1}}}
+\DeclareMathOperator{\closureOp}{Cl}
+\newcommand{\closure}[1]{\closureOp{\parens{#1}}}
+\newcommand{\embedsto}{\hookrightarrow}
+\newcommand{\dprime}{{\prime\prime}} % double prime!
+
+% Linear algebra
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\vdim}{dim}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\vker}{ker}
+\newcommand{\innerp}[1]{\langle#1\rangle}
+
+% Type/proof theory
+\newcommand{\tynorm}{\uparrow}
+\newcommand{\tyneut}{\downarrow}
+\newcommand{\abort}{\text{abort}}
+\newcommand{\refl}{\text{refl}}
+\newcommand{\evalto}{\mathbin{\longrightarrow}}
+\newcommand{\stepto}{\longmapsto}
+\newcommand{\hastype}{\mathbin{:}}
+\newcommand{\oft}{\hastype}
+\newcommand{\rewrite}{\mathbin{\longrightarrow}}
+\newcommand{\evalbig}{\mathbin{\Downarrow}}
+\newcommand{\bigstep}{\mathbin{\Downarrow}}
+\newcommand{\goesto}{\mathbin{\Rightarrow}}
+\newcommand{\orcase}{\mathbin{\mathtt{|}}}
+\newcommand{\true}{\mathtt{true}}
+\newcommand{\false}{\mathtt{false}}
+\newcommand{\fst}{\operatorname{\mathtt{fst}}}
+\newcommand{\snd}{\operatorname{\mathtt{snd}}}
+\newcommand{\checks}{\mathbin{\Longleftarrow}}
+\newcommand{\synth}{\mathbin{\Longrightarrow}}
+\newcommand{\seq}{\mathbin{\Longrightarrow}}
+\newcommand{\deduc}{\operatorname{:}}
+\newcommand{\hastypesc}{\mathbin{\vartriangleright}}
+\newcommand{\inst}{\mathbin{\preceq}}
+% "grammar alternative"
+\newcommand{\galt}{\operatorname{|}}
+\newcommand{\coalt}{\operatorname{\&}}
+\newcommand{\next}{\bigcirc}
+\DeclareMathOperator{\tnextOp}{\mathtt{next}}
+\newcommand{\tnext}{\tnextOp}
+\newcommand{\imp}{\supset}
+\DeclareMathOperator{\boxOp}{\mathtt{box}}
+\renewcommand{\Box}{\boxOp}
+
+\newcommand{\letin}[2]{%
+  \mathtt{let}\ #1\ \mathtt{in}\ #2%
+}
+\newcommand{\mktypeannunary}[1]{%
+  \expandafter\newcommand\csname #1\endcsname[2][]{%
+    \ensuremath
+    \if&##2&
+    \mathtt{#1}
+    \else
+    \mathtt{#1}^{##2}
+    \fi
+    ##1
+  }
+}
+\mktypeannunary{inl}
+\mktypeannunary{inr}
+
+% \newcommand{\inl}[2][]{%
+%   \ensuremath
+%   \if&#2&
+%   \mathtt{inl}
+%   \else
+%   \mathtt{inl}^{#2}
+%   \fi
+%   #1
+% }
+
+% Sets of numbers
+\newcommand{\unit}{[0,1]}
+\newcommand{\makebb}[1]{%
+    \expandafter\newcommand\csname #1\endcsname{\mathbb{#1}}
+}
+\makebb{N}
+\makebb{Z}
+\makebb{Q}
+\makebb{R}
+\makebb{C}
+
+% Other sets and classes
+\newcommand{\verum}[1][]{
+    \mathbf{V}
+    \def\temp{#1}
+    \ifx\temp\empty
+    \else
+    \bracks{#1}
+    \fi
+}
+\newcommand{\ord}{\mathbf{Ord}}
+\newcommand{\constructible}{\mathbf{L}}
+\newcommand{\one}{\mathbbm{1}}
+\newcommand{\zero}{\mathbbm{0}}
+
+% Probabilistic operators
+\DeclareMathOperator{\Prob}{P}
+\renewcommand{\P}[1]{\Prob{\parens{#1}}}
+\DeclareMathOperator{\prob}{p}
+\newcommand{\p}[2][]{%
+    \def\temp{#2}
+    \ifx\temp\empty
+        \prob{\parens{#2}}
+    \else
+        \prob_{#1}{\parens{#2}}
+    \fi
+}
+\DeclareMathOperator{\Expect}{\mathbb{E}}
+\newcommand{\E}[1]{\Expect{\left[#1\right]}}
+\DeclareMathOperator{\Var}{\mathbb{V}}
+\newcommand{\V}[1]{\Var{\parens{#1}}}
+
+% Distributions
+\DeclareMathOperator{\BinOp}{Bin}
+\newcommand{\Bin}[1]{ \BinOp\parens{#1} }
+\DeclareMathOperator{\PoiOp}{Poi}
+\newcommand{\Poi}[1]{ \PoiOp\parens{#1} }
+\DeclareMathOperator{\NBinOp}{\mathcal{N}Bin}
+\newcommand{\NBin}[1]{ \NBinOp\parens{#1} }
+\DeclareMathOperator{\GeoOp}{Geo}
+\newcommand{\Geo}[1]{ \GeoOp\parens{#1} }
+\DeclareMathOperator{\HGeoOp}{HG}
+\newcommand{\HGeo}[1]{ \HGeoOp\parens{#1} }
+\DeclareMathOperator{\UnifOp}{Unif}
+\newcommand{\Unif}[1]{ \UnifOp\parens{#1} }
+\DeclareMathOperator{\NormalOp}{\mathcal{N}}
+\newcommand{\Normal}[1]{ \NormalOp\parens{#1} }
+\newcommand{\StdNormal}{\Normal{0;1}}
+\DeclareMathOperator{\GammaOp}{Gamma}
+\newcommand{\GammaD}[1]{ \GammaOp\parens{#1} }
+\DeclareMathOperator{\BetaOp}{Beta}
+\newcommand{\BetaD}[1]{ \BetaOp\parens{#1} }
+\DeclareMathOperator{\ExpOp}{Exp}
+\newcommand{\Exp}[1]{ \ExpOp\parens{#1} }
+\newcommand{\ChiSq}{\Chi^2}
+
+% Misc mathematical
+\newcommand{\cdf}{cumulative distribution function}
+\newcommand{\pmf}{probability mass function}
+\newcommand{\pdf}{probability density function}
+\newcommand{\mgf}{moment generating function}
+\newcommand{\Cdf}{Cumulative distribution function}
+\newcommand{\Pmf}{Probability mass function}
+\newcommand{\Pdf}{Probability density function}
+\newcommand{\Mgf}{Moment generating function}
+
+\newcommand{\constructibleAxiom}{\verum = \constructible}
+
+% Really wide hats
+\stackMath
+\newcommand\reallywidehat[1]{%
+\savestack{\tmpbox}{\stretchto{%
+  \scaleto{%
+    \scalerel*[\widthof{\ensuremath{#1}}]{\kern-.6pt\bigwedge\kern-.6pt}%
+    {\rule[-\textheight/2]{1ex}{\textheight}}%WIDTH-LIMITED BIG WEDGE
+  }{\textheight}%
+}{0.5ex}}%
+\stackon[1pt]{#1}{\tmpbox}%
+}
+\parskip 1ex
+
+% Make varphi the main phi that we use, and define `aphi' for phi treated as an
+% angle.
+\let\aphi\phi
+\renewcommand{\phi}{\varphi}
+
+% Other misc
+\renewcommand{\th}{\textsuperscript{th}}
+
+\endinput

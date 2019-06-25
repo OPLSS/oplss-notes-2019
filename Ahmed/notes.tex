@@ -1,0 +1,260 @@
+\documentclass[11pt]{article}
+
+\title{Secure compilation}
+\author{Jacob Thomas Errington}
+\date{Summer 2019}
+
+\frenchspacing
+
+\usepackage{jakemath}
+\usepackage{listings}
+\usepackage{parskip}
+
+\usetikzlibrary{positioning}
+
+\lstset{
+  basicstyle=\ttfamily
+}
+
+\newcommand{\code}{\texttt}
+\newcommand{\compile}{\rightsquigarrow}
+\newcommand{\ctxeq}{\approx^{ctx}}
+
+\begin{document}
+
+\maketitle
+
+\begin{defn}[Secure compilation]
+  A compiler is \emph{secure} if it preserves security properties.
+  That is, if $e \compile e^\prime$, then all security properties satisfied by
+  $e$ are satisfied by $e^\prime$.
+\end{defn}
+
+Since we are talking about security, we need to have in mind a threat model.
+We consider attackers to be pieces of \emph{code} that are linked with the
+compiled code.
+
+\section{Some motivating examples}
+
+\begin{eg}
+  A callback shouldn't be able to see the variables of the caller.
+
+  \begin{lstlisting}
+  var secret = 0;
+  callback();
+  \end{lstlisting}
+  
+  should be equivalent to
+  
+  \begin{lstlisting}
+  var secret = 0;
+  callback();
+  if (secret == 0) {
+    return 0;
+  }
+  \end{lstlisting}
+\end{eg}
+
+\begin{eg}
+  In a high-level language, we usually assume that we have infinite memory or we
+  have garbage collection. This means that in a low-level setting, an attacker
+  could cause memory allocations to cause a program crash, preventing
+  security-relevant code from running.
+
+  \begin{lstlisting}
+  for (int i = 0; i < n; i++) {
+    new Object();
+  }
+  callback();
+  // security-relevant code
+  \end{lstlisting}
+  
+  should be equivalent to
+  
+  \begin{lstlisting}
+  callback();
+  // security-relevant code
+  \end{lstlisting}
+\end{eg}
+
+\section{Contextual equivalence}
+
+Security properties can be seen as program equivalences. We can capture
+confidentiality properties by stating that two programs with different
+``high-security'' behaviours are equivalent. So the compilation needs to
+preserve this equivalence if it is to be considered secure.
+
+Here is the judgment for contextual equivalence.
+\[
+\boxed{%
+  \Gamma
+  \proves e_1
+  \ctxeq e_2
+  \oft
+  \tau
+}
+\]
+
+How we understand this judgment depends on which notion of equivalence we are
+specifically interested in.
+
+\begin{description}
+\item[Termination.]
+  For any evaluation context $C$, $C[e_1]$ terminates if and only if $C[e_2]$
+  terminates.
+\item[Evaluation.]
+  For any evaluation context $C$, if there exists a value $v$ such that
+  $C[e_1] \bigstep v$ then $C[e_2] \bigstep v$ and vice-versa.
+\item[Resource usage.]
+  You can imagine adding a notion of resource usage and requiring that the
+  programs have the same resource usage.
+\end{description}
+
+For example, we expect that two implementations of a stack ``behave the same'';
+maybe that means running time or simply that they compute the same values on the
+same inputs.
+
+In an untyped language, we can be more specific in defining $\ctxeq$:
+\[
+\forall C.\; C[e_1] \bigstep \iff C[e_2] \bigstep
+\]
+Here we are just looking at termination equivalence.
+
+In a strongly-typed setting, we add in a typing context $\Gamma$ and assume that
+the evaluation context $C$ be well-typed.
+
+\[
+\infer{%
+  \Gamma \proves e_1 \ctxeq e_2 \oft \tau
+}{%
+  \forall C.\;
+  \text{if}\;
+  C : (\Gamma \proves \tau) \Rightarrow (\cdot \proves \tau^\prime) \;
+  \text{then}\;
+  C[e_1] \bigstep v \iff C[e_2] \bigstep v
+}
+\]
+
+Picking $\tau^\prime$ to be a base type is important usually, because the
+ordinary syntactic function equality is too restrictive.
+
+% In a security setting, we always need to think about the treat model.
+% \begin{itemize}
+% \item What is the typing discipline of the target language?
+% \item What observations can the attacker make?
+% \end{itemize}
+% 
+% How do we enforce secure compilation?
+% \begin{itemize}
+% \item Static checking.
+% \item Dynamic checking (e.g. runtime monitoring)
+% \end{itemize}
+% 
+% How do we prove these properties?
+% The basic idea is to ``back-translate'' the target attackers to the source
+% language to show that they can't violate the guarantees of the source language.
+
+\section{Fully-abstract compilation}
+
+\begin{defn}
+  A compiler is \emph{fully-abstract} if it both preserves and reflects
+  contextual equivalence.
+\end{defn}
+
+It's worth nothing that equivalence reflection is usually boring: it is
+typically proven as a corollary of compiler correctness.
+
+Preservation of contextual equivalence can be summarized by this diagram, which
+represents that compiling contextually equivalent terms gives contextually
+equivalent results.
+
+\[
+\begin{array}{ccccc}
+  \Gamma_S \proves  & e_{S_1}  & \ctxeq_S & e_{S_2} : & \sigma  \\
+  ~                 & \downarrow & ~       & \downarrow & ~ \\
+  \Gamma_S^+ \proves & e_{T_1} & \ctxeq_T & e_{T_2} : & \sigma^+
+\end{array}
+\]
+
+How do we ensure full abstraction?
+\begin{enumerate}
+\item Add target features to the source language. (Jumps in ML??)
+\item Dynamic checks: catch badly behaved code in the act. This has a
+  performance cost.
+\item Static checks: rule out badly behaved code in the first place.
+  This is a reasonable way to do things.
+\end{enumerate}
+
+\section{Type-preserving compilation}
+
+\[
+\boxed{e : \tau \compile e^\prime : \tau^+}
+\]
+
+Source program $e$ is compiled to $e^\prime$ with its type $\tau$ preserved.
+
+``System F to Typed Assembly Language'' by Morrisett et al. POPL'97
+Must-read paper for PL.
+
+Why is proving full abstraction hard?
+
+\begin{thm}
+  Suppose $\Gamma \proves e_1 : \tau \compile e_1^\prime$
+  and $\Gamma \proves e_2 : \tau \compile e_2^\prime$.
+  If $\Gamma \proves e_1 \ctxeq e_2 \oft \tau$,
+  then $\Gamma^+ \proves e_1^\prime \ctxeq e_2^\prime \oft \tau^+$.
+\end{thm}
+
+So what we have is that no $C_S$ can distinguish $e_1$ from $e_2$ and we need to
+show that there is no $C_T$ that can distinguish $e_1^\prime$ from $e_2^\prime$.
+
+\section{Closure conversion}
+
+Closure conversion is a program transformation that eliminates closures by
+explicity reifying the free variables of a function in a first-class data
+structure.
+
+Consider
+\begin{lstlisting}
+  let x = 1 in
+  let y = 2 in
+  let f w = x + y + w in
+  f 100
+\end{lstlisting}
+
+We see that \code{f} is closing over \code{x} and \code{y}.
+We translate this by adding an argument to \code{f} that represents the
+environment of free variables available.
+  
+\begin{lstlisting}
+  let x = 1 in
+  let y = 2 in
+  let code env w = env.1 + env.2 + w in
+  let env = <x, y> in
+  let f = <code, env> in
+  f.1 f.2 100
+\end{lstlisting}
+
+There is an invariant present in this translated code that is not statically
+enforced, since we are supposing that the target language is not
+typed. Specifically, the pair \code{f = <code, env>} is always supposed to be
+invoked by \code{f.1 f.2 ...}. An attacker program could synthesize whatever
+environment it wants and invoke \code{f} with it. This synthetic environment
+could have too few fields, or fields with values that weren't anticipated by the
+source programmer.
+
+To remedy this, we will do \emph{typed} closure conversion. But if we just add
+types to the target language, that isn't enough. For instance, in a naive
+translation \code{f} would have the type.
+
+\begin{lstlisting}
+  ((<int, int>, int) -> int) * <int, int>
+\end{lstlisting}
+
+Still, nothing requires a client to use the environment that comes bundled with
+\code{f}! Furthermore, a function \code{g x = x + 1} has the same type as
+\code{f} in the source language, its compilation has the type
+\code{(((), int) -> int) * ()}. So suddenly, things that were the same in the
+source language are outright different in the target language!
+
+\end{document}
