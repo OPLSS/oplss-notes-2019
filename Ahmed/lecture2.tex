@@ -47,9 +47,13 @@ There are many ways to prove compiler correction. We want to say that when:
 \begin{center}
  $e_S$ $\approx$ $e_T$ then $\sigma$ $\approx$ $\sigma^+$
 \end{center}
-V$\llbracket$ $\sigma$ $\rrbracket$  = \{  ($V_S$ , $V_T$) $\textbar$ . $\vdash$ $V_{S}$ : $\sigma$ $\wedge$ . ; . $\vdash$ $V_{T}$ : $\sigma^+$ ..... \} \\
+V$\llbracket$ $\sigma$ $\rrbracket$  = \{  ($V_S$ , $V_T$) $\textbar$ $\cdot$ $\vdash$ $V_{S}$ : $\sigma$ $\wedge$ $\cdot$ ; $\cdot$ $\vdash$ $V_{T}$ : $\sigma^+$ ..... \} \\
 V$\llbracket$ ints $\rrbracket$ = \{ ($n_S$ , $n_T$) \} \\
-V$\llbracket$ $\sigma_1$ $\rightarrow$ $\sigma_2$ $\rrbracket$ = \{ ($\lambda$x:$\sigma_1$ . $e_S$ \}
+V$\llbracket$ $\sigma_1$ $\rightarrow$ $\sigma_2$ $\rrbracket$ = \{ ($\lambda$x:$\sigma_1$ $\cdot$ $e_S$ $\texttt{pack}$ ($\tau_{env}$ , $\langle$ $\lambda$ (Z : $\tau$ , $x_{T}$ : $\sigma_1^+$) $\cdot$ $e_T$ , $V_{env}$ $\rangle$ ) $\textbar$ $\forall$ ($v_S$ , $v_T$) $\mathcal{E}$ V $\llbracket$ $\sigma_1$ $\rrbracket$ . ($e_S$[$v_s$ / $x_s$] , $e_T$ [$v_{env}$ / z , $v_T$ / $x_T$]) $\in$ $\mathcal{E}$ $\llbracket$ $\sigma_2$ $\rrbracket$ \}
+
+\section{Logical Relations}
+
+In logical relations we map related input to related outputs. Same source value and target value are related.
 
 \end{document}
 
