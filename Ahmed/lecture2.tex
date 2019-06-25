@@ -104,6 +104,7 @@ In the rule above $\alpha$ is not allowed to appear in $\tau_2$.
   (\sigma_1\rightarrow\sigma_2)^+ &= \exists\alpha_{env}.\;\langle(\alpha_{env},\;\sigma_1^+)\rightarrow\sigma_2^+,\ \alpha_{env}\rangle
 \end{align*}
 
+
 \paragraph{Typing context translation:} $\Gamma_S^+$
 \begin{align*}
   (\cdot)^+ &= \cdot \\
@@ -127,6 +128,22 @@ where $e_T[(\pi_i\;z)/y_{T_i}]$ is a shorthand for
 \end{equation*}
 
 The rules for $\mathtt{if}0$ and $\mathtt{let}$ are defined according to the structure of the terms.
+
+\section{Preservation Theorem}
+
+\begin{theorem}[Type Preservation]
+If $\Gamma$ $\vdash$ $e_S$ : $\sigma$ and  $\Gamma$ $\vdash$ $e_S$ : $\alpha$ $\rightsquigarrow$ $e_T$ then $\Gamma_S^+$ $\vdash$ $e_T$ : $\sigma^+$
+\end{theorem}
+
+For correctness, we want to show $e_S$ $\approx$ $e_T$. This is not contexual equivalance because source language and target language are two different languages.
+There are many ways to prove compiler correction. We want to say that when:
+\begin{center}
+ $e_S$ $\approx$ $e_T$ then $\sigma$ $\approx$ $\sigma^+$
+\end{center}
+V$\llbracket$ $\sigma$ $\rrbracket$  = \{  ($V_S$ , $V_T$) $\textbar$ . $\vdash$ $V_{S}$ : $\sigma$ $\wedge$ . ; . $\vdash$ $V_{T}$ : $\sigma^+$ ..... \} \\
+V$\llbracket$ ints $\rrbracket$ = \{ ($n_S$ , $n_T$) \} \\
+V$\llbracket$ $\sigma_1$ $\rightarrow$ $\sigma_2$ $\rrbracket$ = \{ ($\lambda$x:$\sigma_1$ . $e_S$ \}
+
 
 \end{document}
 
