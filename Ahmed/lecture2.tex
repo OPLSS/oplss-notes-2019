@@ -6,12 +6,13 @@
 \newtheorem{definition}{Definition}[theorem]
 \newtheorem{example}{Example}
 
-\newcommand{\pack}[4]{\texttt{pack}(#1,\ #2)\ \texttt{as}\ \exists#3.#4}
-\newcommand{\unpack}[4]{\texttt{unpack}(#1,\ #2)=#3\ \texttt{in}\ #4}
-\newcommand{\letin}[3]{\texttt{let}\ #1=#2\ \texttt{in}\ #3}
-\newcommand{\ifzero}[3]{\texttt{if}0\ #1\ #2\ #3}
+\newcommand{\pack}[4]{\mathtt{pack}(#1,\ #2)\ \mathtt{as}\ \exists#3.#4}
+\newcommand{\packs}[3]{\mathtt{pack}(#1,\ #2)\ \mathtt{as}\ #3}
+\newcommand{\unpack}[4]{\mathtt{unpack}(#1,\ #2)=#3\ \mathtt{in}\ #4}
+\newcommand{\letin}[3]{\mathtt{let}\ #1=#2\ \mathtt{in}\ #3}
+\newcommand{\ifzero}[3]{\mathtt{if}0\ #1\ #2\ #3}
 
-\title{Secure Compilation \\ \Large{Lecture 2}} 
+\title{Secure Compilation \\ \Large{Lecture 2} \\ Closure Conversion} 
 \author{Renate Robin Eilers  \and Cristina Matache \and Baber Rehman}
 
 \date{June 24, 2019}
@@ -22,24 +23,110 @@
 
 This is the second talk presented by Amal Ahmed in OPLSS 2019, University of Oregon, USA.
 
-\section{Introduction}
 
-\subsection{Source Language}
+\section{Source Language}
 
-\subsubsection{Types}
+\paragraph{Types}
 
 We just have integers and functions in source language. \\
 
-$\sigma$ ::= int \textbar \hspace{0.1cm} $\sigma_1$ $\rightarrow$ $\sigma_2 ::= $
+\begin{equation*}
+  \sigma ::= int \mid \sigma_1\rightarrow\sigma_2
+\end{equation*}
 
-\subsubsection{Terms}
-
-\subsection{Target Language}
+\paragraph{Terms}
 
 \begin{align*}
-  v &::= \pack{\tau}{v}{\alpha}{\tau} \\
-  e &::= \ifzero{v}{e_1}{e_2} \mid \unpack{\alpha}{x}{v_1}{e_1} \mid \letin{x}{e_1}{e_2}
+  v &::= x \mid n \mid \lambda x:\sigma.e \\
+  e &::= v \mid \ifzero{v}{e_1}{e_2} \mid v_1\ v_2 \mid \letin{x}{e_1}{e_2}
 \end{align*}
+
+So $e_1\ e_2$ is a shorthand for $\letin{x}{e_1}{\letin{y}{e_2}{x\ y}}$.
+
+\paragraph{Evaluation contexts:}
+
+\begin{equation*}
+  E ::= [\cdot] \mid \letin{x}{E}{e_2}
+\end{equation*}
+
+The language has a typing judgement $\Gamma \vdash e:\sigma$ and a small-step call-by-value operational semantics $e \mapsto e'$.
+
+\section{Target Language}
+
+\paragraph{Types and terms}
+
+\begin{align*}
+  \tau &::= int \mid (\tau_1,\ldots,\tau_n)\rightarrow \tau' \mid \langle \tau_1,\ldots,\tau_n\rangle \mid \alpha \mid \exists\alpha.\tau \\
+  v &::= x \mid n \mid \lambda(\overline{x:\tau}).e \mid \langle v_1,\ldots,v_n\rangle \mid \pack{\tau}{v}{\alpha}{\tau} \\
+  e &::= v \mid \ifzero{v}{e_1}{e_2} \mid v_1\ (\overrightarrow{v}) \mid \pi_i\;v \mid \unpack{\alpha}{x}{v}{e_1} \mid \letin{x}{e_1}{e_2}
+\end{align*}
+
+\paragraph{Typing contexts:}
+\begin{align*}
+  \Delta &::= \cdot \mid \Delta,\alpha \\
+  \Gamma &::= \cdot \mid \Gamma,x:\tau         
+\end{align*}
+
+\paragraph{Typing judgements:} $\Delta,\Gamma\vdash e :\tau$
+
+To do closure conversion, we want functions to have a closed body:
+\begin{gather*}
+  \inferrule{\cdot \mid \overline{x:\tau} \vdash e : \tau'}{\Delta;\Gamma \vdash \lambda(\overline{x:\tau}).e : (\overrightarrow{\tau})\rightarrow\tau'} \\
+  \inferrule{\Delta;\Gamma \vdash v : \tau[\tau'/\alpha]}{\Delta;\Gamma \vdash \pack{\tau'}{v}{\alpha}{\tau} : \exists\alpha.\tau}
+\end{gather*}
+
+\begin{example}
+  A term of type $\exists\alpha.\;\alpha\times(\alpha\rightarrow int)$ is:
+  \begin{equation*}
+    w = \pack{bool}{\langle true,\ \lambda x:bool.5\rangle}{\alpha}{\alpha\times(\alpha\rightarrow int)}
+  \end{equation*}
+\end{example}
+
+\begin{equation*}
+  \inferrule{\Delta;\Gamma \vdash v: \exists\alpha.\tau \\ \Delta,\alpha;\Gamma,x:\tau\vdash e_2: \tau_2 \\ \Delta\vdash\tau_2}{\Delta;\Gamma\vdash \unpack{\alpha}{x}{v}{e_2} :\tau_2}
+\end{equation*}
+In the rule above $\alpha$ is not allowed to appear in $\tau_2$.
+
+\begin{example}
+  A well-typed term is:
+  \begin{equation*}
+    \unpack{\alpha}{x}{w}{(\pi_2\ x)\ (\pi_1\ x)}
+  \end{equation*}
+  where $w$ is defined as in the previous example.
+\end{example}
+
+\section{Translation}
+
+\paragraph{Translation of types:} $\sigma^+$
+
+\begin{align*}
+  int_S^+ &= int_T \\
+  (\sigma_1\rightarrow\sigma_2)^+ &= \exists\alpha_{env}.\;\langle(\alpha_{env},\;\sigma_1^+)\rightarrow\sigma_2^+,\ \alpha_{env}\rangle
+\end{align*}
+
+\paragraph{Typing context translation:} $\Gamma_S^+$
+\begin{align*}
+  (\cdot)^+ &= \cdot \\
+  (\Gamma_S,x_S:\sigma)^+ &= \Gamma_S^+,x_T:\sigma^+
+\end{align*}
+
+\paragraph{Term translation:} $\Gamma_S \vdash e_S : \sigma\rightsquigarrow e_T$ where $\cdot;\Gamma_S^+\vdash e_T:\sigma^+$
+
+\begin{gather*}
+  \inferrule{\Gamma_S(x_S)=\sigma}{\Gamma_S\vdash x_S:\sigma \rightsquigarrow x_T} \qquad
+  \inferrule{\ }{\Gamma_S \vdash n_S : int_S \rightsquigarrow n_T} \\
+  \inferrule{y_{S_1},\ldots,y_{S_n}= \text{free variables}(\lambda x_S:\sigma.e_S) \\ \Gamma_S\vdash y_{S_i} : \sigma_i \\ v_{code}=\lambda(z_T:\langle\sigma_1^+,\ldots,\sigma_n^+\rangle).e_T[(\pi_i\;z)/y_{T_i}] \\ \Gamma_S,x_S:\sigma \vdash e_S : \sigma \rightsquigarrow e_T}{\Gamma_S \vdash \lambda x_S:\sigma.e_S : \sigma\rightarrow \sigma' \rightsquigarrow \packs{\langle\sigma_1^+,\ldots,\sigma_n^+\rangle}{\langle v_{code},\;\langle y_{T_1},\ldots,y_{T_n}\rangle\rangle}{(\sigma\rightarrow\sigma')^+}}
+\end{gather*}
+where $e_T[(\pi_i\;z)/y_{T_i}]$ is a shorthand for
+\begin{equation*}
+  \letin{y_{T_1}}{\pi_1\ z}{\ldots \letin{y_{T_n}}{\pi_n\ z}{e_T}}
+\end{equation*}
+
+\begin{equation*}
+  \inferrule{\Gamma_S\vdash v_{S_2} : \sigma_2 \rightsquigarrow v_{T_2} \\ \Gamma_S \vdash v_{S_1}: \sigma_2 \rightarrow \sigma \rightsquigarrow v_{T_1}}{\Gamma_S \vdash v_{S_1}\ v_{S_2} : \sigma \rightsquigarrow \unpack{\alpha}{p}{v_{T_1}}{(\pi_1\;p)\ (\pi_2\;p,\ v_{T_2})}}
+\end{equation*}
+
+The rules for $\mathtt{if}0$ and $\mathtt{let}$ are defined according to the structure of the terms.
 
 \end{document}
 
