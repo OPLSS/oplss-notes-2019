@@ -1,21 +1,15 @@
 \documentclass{article}
-\usepackage[utf8]{inputenc}
-\usepackage[hyphens]{url} 
-\usepackage[breaklinks]{hyperref}
 \usepackage{amsmath,amsthm,stmaryrd,amssymb}
-\usepackage{bussproofs}
-\usepackage{listings}
-\usepackage{tikz}
-\usepackage{ amssymb }
-\usepackage{ stmaryrd }
-\usepackage{rotating}
-\usetikzlibrary{matrix,patterns}
+\usepackage{mathpartir}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{definition}{Definition}[theorem]
 \newtheorem{example}{Example}
 
-\newcommand{\ldash}[2]{\vdash^{\hspace{-.4em}#1}_{\hspace{-.4em}#2}}
+\newcommand{\pack}[4]{\texttt{pack}(#1,\ #2)\ \texttt{as}\ \exists#3.#4}
+\newcommand{\unpack}[4]{\texttt{unpack}(#1,\ #2)=#3\ \texttt{in}\ #4}
+\newcommand{\letin}[3]{\texttt{let}\ #1=#2\ \texttt{in}\ #3}
+\newcommand{\ifzero}[3]{\texttt{if}0\ #1\ #2\ #3}
 
 \title{Secure Compilation \\ \Large{Lecture 2}} 
 \author{Renate Robin Eilers  \and Cristina Matache \and Baber Rehman}
@@ -36,12 +30,13 @@ This is the second talk presented by Amal Ahmed in OPLSS 2019, University of Ore
 
 We just have integers and functions in source language. \\
 
-$\sigma$ ::= int \textbar \hspace{0.1cm} $\sigma_1$ $\rightarrow$ $\sigma_2$
+$\sigma$ ::= int \textbar \hspace{0.1cm} $\sigma_1$ $\rightarrow$ $\sigma_2 ::= $
 
 \subsubsection{Terms}
 
 \subsection{Target Language}
 
+\section{Preservation Proof}
 
 \begin{theorem}[Type Preservation]
 If $\Gamma$ $\vdash$ $e_S$ : $\sigma$ and  $\Gamma$ $\vdash$ $e_S$ : $\alpha$ $\rightsquigarrow$ $e_T$ then $\Gamma_S^+$ $\vdash$ $e_T$ : $\sigma^+$
@@ -56,5 +51,9 @@ V$\llbracket$ $\sigma$ $\rrbracket$  = \{  ($V_S$ , $V_T$) $\textbar$ . $\vdash$
 V$\llbracket$ ints $\rrbracket$ = \{ ($n_S$ , $n_T$) \} \\
 V$\llbracket$ $\sigma_1$ $\rightarrow$ $\sigma_2$ $\rrbracket$ = \{ ($\lambda$x:$\sigma_1$ . $e_S$ \}
 
-
 \end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
