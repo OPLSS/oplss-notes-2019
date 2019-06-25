@@ -58,7 +58,7 @@
 
 
 \begin{document}
-	\date{}
+	
 	\maketitle % Insert the title, author and date
 	
 	\begin{center}
@@ -160,7 +160,68 @@
 	\]
 
 
-	\subsection{???}
+	\subsection{Typing Rules}
+	
+	We can define the typing actions as follows:\\
+	
+\begin{tabular}{ccc}
+    Type & Action (by provider) & Continuation \\
+    \(A \oplus B\) & send \(\pi_1\) or \(\pi_2\) & either of type \(A\) or \(B\)\\
+    \(A \& B\) & receive \(pi_1\) or \(pi_2\) and branch  &  either of type \(A\) or \(B\)\\
+    \(1\) & close channel &\(X\) \\
+    \(A \multimap B\) & receive a channel &\(B\) \\
+    \(A \otimes B\) & send a channel &\(B\) \\
+\end{tabular}
+\\
+
+We now need typing rules that match these actions. The choice type rules have already been defined so they are omitted. For the closing of a channel the left and right rules are as follows:
+\[
+\infer[{1R}]
+  {\bullet \vdash close \, x :: x : 1}
+  {}
+\hspace{3em}
+\infer[{1L}]
+  {\Gamma , x:1 \vdash wait \, x ; P :: z:C }
+  {\Gamma \vdash P :: z : C}
+\]
+
+The right rule describes a channel closing then the process has no other actions, the left rule describes waiting for a channel x to close before it can continue to perform as \( P \). Useing the cut elimination theorem we can deduce the reduction rules to be:
+
+\[ (close \, c ) \mid ( wait \, c ; P ) \rightarrow P  \]
+
+
+Newt we describe both the Sending of a channel and the receiving of a channel. Notice that the sending and receiving are duals, if you send something then you need to have a process that is able to receive what you are sending and vice-versa.
+
+\[
+\infer[{\multimap R}]
+  {\Gamma \vdash y \leftarrow rec \, x ; P_y :: x : A \multimap  B}
+  {\Gamma , y:A \vdash P_y :: x: B}
+\hspace{3em}
+\infer[{\multimap L}]
+  {\Gamma , y:A , x: A \multimap B \vdash send \, x \, y ; Q :: z : C}
+  {\Gamma , x:B \vdash Q :: z : C}
+\]
+
+\[
+\infer[{\otimes R}]
+  {\Gamma , y:A \vdash send \, x \, y ; Q :: x : A \otimes B}
+  {\Gamma \vdash Q :: x : B}
+\hspace{3em}
+\infer[{\otimes L}]
+  {\Gamma , x : A \otimes B \vdash y \leftarrow rec \, x ; P_y :: z : C}
+  {\Gamma  \vdash P_y :: x: A \multimap B}
+\]
+	
+These \(\multimap\) rules work as follows. Its left rule describes the sending of \(y\) that has type \(A\) along \(x\) and then proceeding as process \(P\) which contains the channel \(y\) in it. The left rule requires you to know the type of \(y\) the channel you are sending. Notice that this doesn't match our logical rules and that means that out cut elimination theorem no longer holds. However you can use the argument that theses are equivalent as the logic requires for you to prove that \(y\) has type a however we already have that in our assumptions.  %bit iffy here hard for me to describe
+
+The left and right rules in parallel then perform the reduction. Here a shared channel is sending \(z\) in one process and receiving the \(z\) in the other process and replacing it with the place holder \(y\).
+
+	
+\[  (y \leftarrow rec \, x . P_y ) \mid ( send \, x \, z ; Q ) \rightarrow  [z/y ] P_y \mid Q \]
+
+	
+	
+	
 	\subsection{Implementing a queue}
 	We will implement a queue in linear logic. Professor Pfenning says that he wants to do this in an object oriented way. 
 	
