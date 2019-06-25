@@ -9,6 +9,7 @@
 \usepackage{hyperref}
 \usepackage{cite}
 \usepackage{accents}
+\usepackage{tikz-cd}
 
 \newtheorem{thm}{Theorem}[section]
 \newtheorem{lemma}[thm]{Lemma}
@@ -110,7 +111,7 @@ We assume that there is a exception control mechanism.
 \begin{align*}
   \tau ::=& \dots \mid \T{clsfd} \mid \tau\;\T{cls} \\
   v ::=& \dots \mid \T{in}[c](v) \mid \&c \\
-  m ::=& \dots \mid \T{isin}[c](v;x.m_{1};m_{2})
+  m ::=& \dots \mid \T{isin}[c](v;x.m_{1};m_{2}) 
   \mid \T{new}[\tau](c.m) \mid \T{reveal}(v ; c.m)
 \end{align*}
 
@@ -176,8 +177,8 @@ with the invariant of $\Sigma^{\prime} \supseteq \Sigma$
 
 final states : $\nu\Sigma\{\T{ret}(v)\}$
 
-When is a state statically OK? $\nu\Sigma\{m\}\;\T{OK}$ means
-$\entails_{\Sigma} m \dsym\tau$.
+When is a state statically OK? $\nu\Sigma\{m\}\;\T{ok}$ means
+$\entails_{\Sigma} m \dsym\tau$(for any $\tau$). Compare with what we do for the static type($m \mapsto_{\Sigma} m^{\prime}$).
 
 \begin{mathpar}
   \inferrule* [Right=]
@@ -216,20 +217,32 @@ $\T{isin}$ but dynamically determined).
 Possession of a reference (class reference) affords ``full rights'' to
 create and analyze classified values (according to that reference).
 $$\tau\;\T{cls}\approx\langle \T{mk}\hookrightarrow\tau\rightarrow\T{clsfd},
-\T{mk}^{-1}\hookrightarrow \T{clsfd}\rightarrow\tau\;\T{opt}\rangle$$
+\T{mk}^{-1}\hookrightarrow \T{clsfd}\rightarrow\tau\;\T{opt}\rangle$$, where $\tau\;\T{opt}$ is just $\tau + 1$.
 
 $$\& a \mapsto\langle \T{mk}\hookrightarrow \lambda[\tau](x.\T{in}[a](x)),
 \T{mk}^{-1}\hookrightarrow
 \lambda[\T{clsfd}](x.\T{isin}[a](x;y.\T{ret}(1\cdot y);
 \T{ret}(2\cdot\Lunit))\rangle$$
 
+What we want is dynamically "extensible" sum("$\tau_1 + \tau_2 + ... + \tau_n$"), and dynamically "new", aka, information flow or knowledge flow.
+
+$\texttt{class}$ is unguessable secret or perfect encryption(by $\alpha-$conversion).
+
+\underline{capabilities} express "integrity" and "confidentiality".
+
+exceptions (i.e. the values) are "shared secrets".
+
 \begin{enumerate}
-\item The possesor of $\T{mk}$ is held responsible for the
-\underline{integrity} of the underlying data.  The possessor, therefore,
-must ensure that invariants about the data hold.
-\item The possesor of $\T{mk}^{-1}$ can compromise the confidentiality
-barrier and know that the associated invariant holds.
+\item The possessor of $\T{mk}$ is held responsible for the
+\underline{integrity} of the underlying data.  The possessor, therefore, must ensure that invariant about the data hold.
+\item The possessor of $\T{mk}^{-1}$ can compromise the \underline{confidentiality} barrier and know that the associated invariant holds.
 \end{enumerate}
+
+\begin{tikzcd}
+                            &  & mk      \\
+\&a \arrow[rru] \arrow[rrd] &  &         \\
+                            &  & mk^{-1}
+\end{tikzcd}
 
 (To do some enforcement or analysis of security properties seems to involve
 some form of epistemic logic)
