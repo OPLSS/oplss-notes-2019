@@ -5,6 +5,7 @@
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{definition}{Definition}[theorem]
 \newtheorem{example}{Example}
+\newtheorem{lemma}[theorem]{Lemma}
 
 \newcommand{\pack}[4]{\mathtt{pack}(#1,\ #2)\ \mathtt{as}\ \exists#3.#4}
 \newcommand{\packs}[3]{\mathtt{pack}(#1,\ #2)\ \mathtt{as}\ #3}
@@ -28,7 +29,7 @@ This is the second talk presented by Amal Ahmed in OPLSS 2019, University of Ore
 
 \paragraph{Types}
 
-We just have integers and functions in source language. \\
+We just have integers and function in source language. \\
 
 \begin{equation*}
   \sigma ::= int \mid \sigma_1\rightarrow\sigma_2
@@ -136,18 +137,62 @@ If $\Gamma$ $\vdash$ $e_S$ : $\sigma$ and  $\Gamma$ $\vdash$ $e_S$ : $\alpha$ $\
 \end{theorem}
 
 For correctness, we want to show $e_S$ $\approx$ $e_T$. This is not contexual equivalance because source language and target language are two different languages.
-There are many ways to prove compiler correction. We want to say that when:
+There are many ways to prove compiler correction. We want to say that:
 \begin{center}
- $e_S$ $\approx$ $e_T$ then $\sigma$ $\approx$ $\sigma^+$
+ when $e_S$ $\approx$ $e_T$ then $\sigma$ $\approx$ $\sigma^+$
 \end{center}
-V$\llbracket$ $\sigma$ $\rrbracket$  = \{  ($V_S$ , $V_T$) $\textbar$ $\cdot$ $\vdash$ $V_{S}$ : $\sigma$ $\wedge$ $\cdot$ ; $\cdot$ $\vdash$ $V_{T}$ : $\sigma^+$ ..... \} \\
-V$\llbracket$ ints $\rrbracket$ = \{ ($n_S$ , $n_T$) \} \\
-V$\llbracket$ $\sigma_1$ $\rightarrow$ $\sigma_2$ $\rrbracket$ = \{ ($\lambda$x:$\sigma_1$ $\cdot$ $e_S$ $\texttt{pack}$ ($\tau_{env}$ , $\langle$ $\lambda$ (Z : $\tau$ , $x_{T}$ : $\sigma_1^+$) $\cdot$ $e_T$ , $V_{env}$ $\rangle$ ) $\textbar$ $\forall$ ($v_S$ , $v_T$) $\mathcal{E}$ V $\llbracket$ $\sigma_1$ $\rrbracket$ . ($e_S$[$v_s$ / $x_s$] , $e_T$ [$v_{env}$ / z , $v_T$ / $x_T$]) $\in$ $\mathcal{E}$ $\llbracket$ $\sigma_2$ $\rrbracket$ \}
 
 \section{Logical Relations}
 
 In logical relations we map related input to related outputs. Same source value and target value are related.
 
+\paragraph{Values}
+
+V$\llbracket$$\sigma$$\rrbracket$  = \{($v_S$ , $v_T$)  $\mid$ $\cdot$ $\vdash$ $v_{S}$:$\sigma$ $\wedge$ $\cdot$ ; $\cdot$ $\vdash$ $v_{T}$:$\sigma^+$ ..... \}
+
+\paragraph{Integers}
+	
+V$\llbracket$ints$\rrbracket$ = \{($n_S$ , $n_T$)\}
+
+\paragraph{Function}	
+
+V$\llbracket$$\sigma_1$$\rightarrow$$\sigma_2$$\rrbracket$ = \{($\lambda$x:$\sigma_1$ $\cdot$ $e_S$ $\mathtt{pack}$ ($\tau_{env}$ , $\langle$ $\lambda$ (Z:$\tau$,$x_{T}$:$\sigma_1^+$) $\cdot$ $e_T$,$V_{env}$ $\rangle$ )  $\mid$ $\forall$($v_S$ , $v_T$) $\mathcal{E}$ V$\llbracket$$\sigma_1$$\rrbracket$ . ($e_S$[$v_s$/$x_s$],$e_T$ [$v_{env}$/z,$v_T$/$x_T$]) $\in$ $\mathcal{E}$ $\llbracket$$\sigma_2$$\rrbracket$\}
+
+\paragraph{Typing Judgement }
+
+$\mathcal{E}$ $\llbracket$$\sigma$$\rrbracket$ = \{($e_S$,$e_T$) $\cdot$ $\vdash$ $e_S$:$\sigma$ $\wedge$ 
+$\cdot$ ; $\vdash$$e_T$:$\sigma^+$ $\wedge$ 
+$\forall$$v_S$ $\cdot$ $e_S$ $\longmapsto^*$ $v_S$ $\Rightarrow$ $\exists$$v_T$ $\cdot$ $e_T$ $\rightarrow^*$ $v_T$ $\wedge$ 
+($v_S$ , $v_T$) $\in$ v $\llbracket$$\sigma$$\rrbracket$ $\wedge$ 
+$\forall$$v_T$ $\cdot$ $e_T$ $\longmapsto^*$ $v_T$ $\Rightarrow$ $\exists$$v_S$ $\cdot$ $e_S$ $\longmapsto^*$ $v_S$ $\wedge$ 
+($v_S$,$v_T$) $\in$ v $\llbracket$$\sigma$$\rrbracket$\} \\
+
+Target language behavious is shown in source language.
+
+\theoremstyle{definition}
+\begin{definition}
+$\Gamma_S$ $\vdash$ $e_S$ $\approx$ $e_T$:$\sigma$ = $\Gamma_S$ $\vdash$ $e_S$:$\sigma$ $\wedge$ $\cdot$ ; $\Gamma_S^+$ $\vdash$ $e_T$:$\sigma^+$ $\wedge$ 
+$\forall$($\gamma_S$,$\gamma_T$) $\in$ $\mathcal{G}$ $\llbracket$$\sigma$$\rrbracket$ $\cdot$ ($\gamma_S$($e_S$),$\gamma_T$($e_T$)) $\in$ $\mathcal{E}$ $\llbracket$$\sigma$$\rrbracket$. \\ \\
+S and T are like holes in expression. They are not complete program. This is like substitution and linking. It will be combined with other code. \\ \\
+$\gamma_S$ = \{$x_{S1}$ $\longmapsto$ $v_{S1}$ .... \} \\
+$\gamma_T$ = \{$x_{T1}$ $\longmapsto$ $v_{T1}$ .... \} \\ \\
+$\mathcal{G}$$\llbracket$$\cdot$$\rrbracket$ = \{$\phi$ $\cdot$ $\phi$\} \\
+$\mathcal{G}$$\llbracket$$x_S$:$\sigma$$\rrbracket$ = \{($\gamma_S$[$x_S$ $\longmapsto$ $v_S$] , $\gamma_T$[$x_T$ $\longmapsto$ $v_T$])
+ $\mid$ ($\gamma_S$,$\gamma_T$) $\in$ $\mathcal{G}$$\llbracket$$x_S$:$\Gamma$$\rrbracket$ $\wedge$ ($v_S$,$v_T$) $\in$ V$\llbracket$$x_S$:$\sigma$$\rrbracket$\}
+
+
+\end{definition}
+
+\begin{theorem}[Compiler Correctness]
+If $\Gamma_S$ $\vdash$ $e_S$:$\sigma$ $\rightsquigarrow$ $e_T$ then $\Gamma$ $\vdash$ $e_S$ $\approx$ $e_T$:$\sigma$.
+\end{theorem}
+\begin{proof}
+This theorem can be proved by induction on typing derivation of source language. It can be proved just by unfoalding the definitions.
+\end{proof}
+
+\begin{lemma}[Fundamental Property]
+$\Gamma$ $\vdash$ $e_S$:$\sigma$ $\Rightarrow$ $\Gamma$ $\vdash$ $e_S$ $\approx$ $e_T$:$\sigma$
+\end{lemma}
 
 \end{document}
 
