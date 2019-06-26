@@ -1,0 +1,304 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathpartir}
+\usepackage{syntax}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{accents}
+\usepackage{tikz-cd}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lemma}[thm]{Lemma}
+\newtheorem{corr}{Corollary}
+\newtheorem{definition}{Definition}[section]
+\newtheorem*{remark}{Remark}
+
+\newcommand{\entails}{\ensuremath{\vdash}}
+\newcommand{\sequent}[3]{\ensuremath{#1 \vdash{} #2 \colon{} #3}}
+\newcommand{\seqO}[2][x]{\ensuremath{#1_0,#1_1,\ldots,#1_{#2}}}
+\newcommand{\seqS}[2][x]{\ensuremath{#1_1,#1_2,\ldots,#1_{#2}}}
+\newcommand{\circuit}{\texttt{circ}}
+\newcommand{\RR}{\ensuremath{\mathbb{R}}}
+\newcommand{\NN}{\ensuremath{\mathbb{N}}}
+\newcommand{\ZZ}{\ensuremath{\mathbb{ZZ}}}
+\newcommand{\pcf}{\textsc{Pcf}}
+\newcommand{\dsym}{\ensuremath{\;\underaccent{\dot}{\dot{\sim}}\;}}
+
+\newcommand{\T}[1]{\ensuremath{\mathtt{#1}}}
+\newcommand{\Ltt}{\ensuremath{\mathtt{tt}}}
+\newcommand{\Lff}{\ensuremath{\mathtt{ff}}}
+\newcommand{\Lcomp}[1]{\ensuremath{#1\;\mathtt{comp}}}
+\newcommand{\Lval}{\ensuremath{\;\mathtt{val}}}
+\newcommand{\Lzero}{\ensuremath{\mathtt{zero}}}
+\newcommand{\Lif}[3]{\ensuremath{\mathtt{if}(#1 ; #2 ; #3)}}
+\newcommand{\Lifz}[3]{\ensuremath{\mathtt{ifz}(#1 ; #2 ; #3)}}
+\newcommand{\Llam}[3][\tau]{\ensuremath{\lambda[#1](#2 . #3)}}
+\newcommand{\Lfix}[3][\tau]{\ensuremath{\mathtt{fix}[#1](#2 . #3)}}
+\newcommand{\Lapp}[2]{\ensuremath{#1\, #2}}
+\newcommand{\Lbind}{\ensuremath{\mathtt{bind}}}
+\newcommand{\Lraise}{\ensuremath{\mathtt{raise}}}
+\newcommand{\Lunit}{\ensuremath{\langle\rangle}}
+
+\setlength{\parindent}{0pt}
+
+\lstset{
+  basicstyle=\footnotesize\ttfamily,
+  breaklines=true,
+  captionpos=b,
+  keepspaces=true,
+  escapeinside={(*@}{@*)},
+  showtabs=false
+}
+
+\title{Practical Foundations for Programming Languages}
+\author{Jason Hu, Zhe Zhou, Ramana Nagasamudram}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Dynamic Classification}
+\label{sec:dc}
+
+% (Terminology in PFPL ; synthesis of ideas that have been around for
+% decades.)
+
+% Versus \emph{Static classification} = (finite) sums
+
+% $$\mathcal{U}\approxeq [\T{num}\hookrightarrow \omega,\T{nil}\hookrightarrow
+% 1,\T{cons}\hookrightarrow \mathcal{U} \times \mathcal{U}, \T{fun}\hookrightarrow \mathcal{U}\rightarrow
+% \mathcal{U} \dots]$$
+
+Each summand is a \underline{class} of values (sometimes called run-time
+types, but this makes it confusing). \emph{Dynamic dispatch} is just a
+case analysis for a sum type.  There is a discussion in PFPL about dynamic
+dispatch (to dispel certain assumptions ; discussion of a \emph{dispatch
+matrix}).
+When you do case analysis of some element of a sum type, you recover information
+because you know what the underlying data is.  This is an important idea
+-- case analysis reveals information.
+
+\vspace{1em}
+
+\textbf{What we want}: Some type of ``extensible'' sum.  That is a sum of a bunch
+of things, e.g. $\tau_{1}+\tau_{2}+\dots$ (we want the $\dots$ to be part
+of the syntax).  We want dynamical extensibility.  At run-time, we are
+generating new classes of data that we can dispatch on.  We have things
+that are dynamically new (as opposed to statically new).  This
+means that it will be completely tied with issues of information flow or
+knowledge flow.
+
+A dynamically new class corresponds to an ``unguessable'' secret (or
+perfect encryption by $\alpha$-conversion).  ``Encryption is just
+$\alpha$-conversion and Church invented it in the ``30s''.
+It induces \emph{capabilities} express \emph{integrity} and
+\emph{confidentiality}.
+
+\textbf{Key idea}: exceptions (i.e. the values associated with an
+exception) are ``shared secrets''.  Raiser ensures the integrity of the
+data, and you allow the handler to violate the confidentiality of the
+data.
+
+\section{FPC (by-value)  example}
+\label{sec:fpc}
+
+We assume that there is a exception control mechanism.
+
+\begin{align*}
+  \tau ::=& \dots \mid \T{clsfd} \mid \tau\;\T{cls} \\
+  v ::=& \dots \mid \T{in}[c](v) \mid \&c \\
+  m ::=& \dots \mid \T{isin}[c](v;x.m_{1};m_{2}) 
+  \mid \T{new}[\tau](c.m) \mid \T{reveal}(v ; c.m)
+\end{align*}
+
+$\T{clsfd}$ is dynamically classified -- we are going to attach a class to
+a data item, and we can generate these classes at runtime.  The classes
+$c$ are an indexing scheme (that happens to be
+open-ended). $\tau\;\T{cls}$ is a ``class reference''.  (The book contains
+a section on references that has nothing to do with state).  $\T{cls}[c]$
+is written as $\& c$.
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  {}
+  {\Gamma{}\entails_{\Sigma} v : \tau}
+
+  \inferrule* [Right=]
+  {}
+  {\Gamma{}\entails_{\Sigma{}} m \dsym \tau}
+\end{mathpar}
+
+$\Sigma = c_{1} \sim \tau_{1}, \dots, c_{n} \sim \tau_{n}$ are
+``signatures''. Order doesn't matter. It can be weakened, do \emph{injective}
+renaming (because we need the stability of disequality).  These are not
+variables.
+
+
+$\T{new}[\tau](c.m)$ is a class binder (binds the class $c$ in $m$)
+
+\subsection{Statics}
+
+\begin{mathpar}
+  \inferrule*
+  {\Gamma \vdash_{\Sigma, c \sim \tau} v : \tau}
+  {\Gamma \vdash_\Sigma \T{in}[c](v) : \T{clsfd}}
+
+  \inferrule*
+  {\Gamma \vdash_{\Sigma, c \sim \tau} v : \T{clsfd} \\
+  \Gamma,x : \tau \vdash_{\Sigma, c \sim \tau} m_1 \dsym \tau \\ \Gamma \vdash_{\Sigma, c \sim \tau} m_2 \dsym \tau}
+  {\Gamma \vdash_{\Sigma, c \sim \tau} \T{isin}[c](v;x.m_{1};m_{2}) \dsym \tau}
+
+  \inferrule* [Right=]
+  {\Gamma{}\entails_{\Sigma,c\sim\tau} m \dsym \tau^{\prime}}
+  {\Gamma{}\entails_{\Sigma}\T{new}[\tau](c.m) \dsym \tau^{\prime}}
+
+  \inferrule* [Right=]
+  { }
+  {\Gamma \entails_{\Sigma,c\sim\tau} \& c : \tau\;\T{cls}}
+
+  \inferrule* [Right=]
+  {\Gamma\entails_{\Sigma} v : \tau\;\T{cls} \\
+    \Gamma\entails_{\Sigma,c\sim\tau} m \dsym\tau^{\prime}}
+  {\Gamma \entails_{\Sigma}\T{reveal}(v;c.m)\dsym\tau^{\prime}}
+\end{mathpar}
+
+\subsection{Dynamics}
+
+In a (scope-)free style,
+
+states : $\nu\Sigma\{m\}$
+
+transitions : $\nu\Sigma\{m\}\mapsto \nu\Sigma^{\prime}\{m^{\prime}\}$
+with the invariant of $\Sigma^{\prime} \supseteq \Sigma$
+
+final states : $\nu\Sigma\{\T{ret}(v)\}$
+
+When is a state statically OK? $\nu\Sigma\{m\}\;\T{ok}$ means
+$\entails_{\Sigma} m \dsym\tau$(for any $\tau$). Compare with what we do for the static type($m \mapsto_{\Sigma} m^{\prime}$).
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  { }
+  { \nu\Sigma\{\T{new}[\tau](c.m)\}\mapsto \nu(\Sigma , c\sim\tau)\{m \} }
+
+  \inferrule* [Right=]
+  { c = c^\prime (\Rightarrow \tau = \tau^\prime)}
+  {\nu(\Sigma,c\sim\tau,c^{\prime}\sim\tau^{\prime})\{
+    \T{isin}[c](\T{in}[c^{\prime}](v^{\prime}) ; x . m_1 ; m_2 )\}
+    \mapsto\nu(\Sigma,c\sim\tau,c^{\prime}\sim\tau^{\prime})\{[v^{\prime}/x]m_1\}}
+
+  \inferrule* [Right=]
+  { c \neq c^\prime }
+  {\nu(\Sigma,c\sim\tau,c^{\prime}\sim\tau^{\prime})\{
+    \T{isin}[c](\T{in}[c^{\prime}](v^{\prime}) ; x . m_1 ; m_2 )\}
+    \mapsto \nu(\Sigma,c\sim\tau,c^{\prime}\sim\tau^{\prime})\{m_2\}}
+
+  \inferrule* [Right=]
+  { }
+  {\nu(\Sigma,c\sim\tau^{\prime})\{\T{reveal}(\& c; c.m)\}\mapsto
+    \nu(\Sigma,c\sim\tau)\{ m \}}
+\end{mathpar}
+
+$$\T{inref}(v,v^{\prime})\triangleq \T{reveal}(v;c.m[c](v^{\prime})) \dsym
+\T{clsfd}$$
+
+With all of this you can form a classified value without actually knowing
+what the classified value is.
+
+\textbf{Exercise}: define $\T{isinref}(v ; v^{\prime} ; x.m_{1} ; m_{2})$ (like
+$\T{isin}$ but dynamically determined).
+
+\section{Capabilities}
+
+Possession of a reference (class reference) affords ``full rights'' to
+create and analyze classified values (according to that reference).
+$$\tau\;\T{cls}\approx\langle \T{mk}\hookrightarrow\tau\rightarrow\T{clsfd},
+\T{mk}^{-1}\hookrightarrow \T{clsfd}\rightarrow\tau\;\T{opt}\rangle$$, where $\tau\;\T{opt}$ is just $\tau + 1$.
+
+$$\& a \mapsto\langle \T{mk}\hookrightarrow \lambda[\tau](x.\T{in}[a](x)),
+\T{mk}^{-1}\hookrightarrow
+\lambda[\T{clsfd}](x.\T{isin}[a](x;y.\T{ret}(1\cdot y);
+\T{ret}(2\cdot\Lunit))\rangle$$
+
+What we want is dynamically "extensible" sum("$\tau_1 + \tau_2 + ... + \tau_n$"), and dynamically "new", aka, information flow or knowledge flow.
+
+$\texttt{class}$ is unguessable secret or perfect encryption(by $\alpha-$conversion).
+
+\underline{capabilities} express "integrity" and "confidentiality".
+
+exceptions (i.e. the values) are "shared secrets".
+
+\begin{enumerate}
+\item The possessor of $\T{mk}$ is held responsible for the
+\underline{integrity} of the underlying data.  The possessor, therefore, must ensure that invariant about the data hold.
+\item The possessor of $\T{mk}^{-1}$ can compromise the \underline{confidentiality} barrier and know that the associated invariant holds.
+\end{enumerate}
+
+\begin{tikzcd}
+                            &  & mk      \\
+\&a \arrow[rru] \arrow[rrd] &  &         \\
+                            &  & mk^{-1}
+\end{tikzcd}
+
+(To do some enforcement or analysis of security properties seems to involve
+some form of epistemic logic)
+
+\vspace{1em}
+
+\subsection{Relation to ML}
+
+In ML,
+\begin{enumerate}
+\item $\T{exception}\ X \;\T{of}\; \tau$ declares an exception $X$ carrying
+values of type $\tau$.
+\item $\T{raise}(e)$ raises an exception $e : \T{exn}$ where $\T{exn}$ is just
+$\T{clsfd}$.
+\item $e\;\T{handle}\; z\Rightarrow e$ handles an exception: You don't
+need the name of the exception to handle it!
+\end{enumerate}
+
+\begin{lstlisting}
+  exception X of (*@$\tau'$@*)
+  val X = (*@$\langle$@*)raise[(*@$\tau$@*)] (*@$\hookrightarrow$@*) exn (*@
+  $\rightharpoonup \tau$ @*),
+           handle[(*@$\tau$@*)] (*@$\hookrightarrow$@*) (*@$\tau \rightharpoonup
+(\T{clsfd}\rightharpoonup\tau)\rightharpoonup\tau$@*)(*@$\rangle$@*)
+
+  raise X(v) (*@$\hookrightarrow$@*) bnd(comp(x.mk(v));
+                    y.RAISE(y);
+                    z.RAISE(t))
+
+  e handle X(x) => m' (*@$\hookrightarrow$@*)
+    bnd(comp(m); x. ret(x);
+        y. bnd(comp(x.mk(*@$^{-1}$@*)(y)); x.m'; z.RAISE(z)))
+
+  exception X of (*@$\tau$@*) (*@$\hookrightarrow$@*)
+    new[(*@$\tau$@*)](c.(*@$\langle$@*)mk (*@$\hookrightarrow\dots$@*)
+              mk(*@$^{-1}$@*) (*@$\hookrightarrow\dots$@*)(*@$\rangle$@*))
+\end{lstlisting}
+
+In $\T{raise}\; X(v)$, $X$ is of type $\tau\rightarrow\T{clsfd}$ and $v$
+is of type $\tau$.
+
+\section{Things to look at}
+\label{sec:look}
+
+\begin{itemize}
+\item Datatypes are abstract (\emph{statically new}) recursive sums (static
+  classification).  Even if you write the same datatype declaration twice,
+  you get two different types.  Sometimes people call this
+  a \emph{generative data type}.
+\end{itemize}
+
+\section{References}
+
+\begin{itemize}
+\item Robert Harper. PFPL Supplement: Exceptions: Control and Data \url{https://www.cs.cmu.edu/~rwh/pfpl/supplements/exceptions.pdf}
+\item Robert Harper. Practical Foundations for Programming Languages. Chapter 29, 33.
+\end{itemize}
+
+\end{document}

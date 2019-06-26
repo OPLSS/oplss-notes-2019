@@ -1,0 +1,353 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,lmodern}
+\usepackage{amsthm}
+\usepackage{minibox}
+\usepackage{pgfplots}
+\pgfplotsset{width=10cm,compat=1.9}
+\usepackage{tikz-cd}
+\usepackage{adjustbox}
+\usepackage{circuitikz}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{mathpartir}
+
+\usepackage{listings}
+\usepackage{color}
+
+\usepackage[shortlabels]{enumitem}
+\usepackage[bb=boondox]{mathalfa}
+\usepackage{ifthen}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{mathpartir}
+\usepackage{float}
+
+\makeatletter
+\def\namedlabel#1#2{\begingroup
+   \def\@currentlabel{#2}%
+   \label{#1}\endgroup
+}
+\makeatother
+\newcommand{\infnlabel}[2]{#1\namedlabel{#2}{#1}}
+\newcommand{\infref}[1]{\textsc{\ref{#1}}}
+
+\definecolor{eclipseBlue}{RGB}{42,0.0,255}
+\definecolor{eclipseGreen}{RGB}{63,127,95}
+
+\newcommand{\Circ}[1]{#1\ \texttt{circ}}
+\newcommand{\Eval}[2]{#1 \Downarrow #2}
+\newcommand{\ttt}{\texttt{tt}}
+\newcommand{\ff}{\texttt{ff}}
+\newcommand{\fix}[2]{\texttt{fix}(#1 . #2)}
+\newcommand{\RNum}[1]{\uppercase\expandafter{\romannumeral #1\relax}}
+\newcommand{\nor}[3]{\overline{V}_{\RNum #1}(#2, #3)}
+\newcommand{\multival}[2]{\ensuremath{#1 \mapsto^{*} #2}}
+
+\title{Practical Foundations for Programming Languages}
+\author{Jason Hu, Zhe Zhou, Ramana Nagasamudram}
+\date{June 19. 2019}
+
+\begin{document}
+\maketitle
+
+\section{Essentials}
+\begin{itemize}
+  \item Practical Foundations for Programming Languages. \url{https://cs.cmu.edu/~rwh/pfpl}
+  \item Abstract syntax with binding and scope
+  \item Inductive definitions "least relation closed with rules"
+  \item Safety for partial languages
+\end{itemize}
+
+\begin{displayquote}
+``What does it mean for a PL to exist?''
+
+``A mathematical object subject to rigorous analysis.''
+\end{displayquote}
+
+\begin{enumerate}
+\item abstract syntax
+\item statics  / formation
+\item dynamics / execution $\to$ the truth about what is going on
+\end{enumerate}
+
+All should be coherent.
+
+Statics is approximation of dynamics. Statics is a prediction about the dynamics.
+
+\section{Abstract Syntax}
+
+\begin{align*}
+  e ::= \ x\ |\ \ttt\ |\ \ff\ |\ \nor 1{e_1}{e_2}\ |\ \nor 2{e_1}{e_2}\ |\
+          \fix{x}{e}
+\end{align*}
+
+\section{Statics}
+
+We write $\Circ{e}$ to denote that $e$ is a well-formed circuit.
+
+\begin{mathpar}
+  \inferrule*
+  { }{\Circ{\ttt}}
+
+  \inferrule*
+  { }{\Circ{\ff}}
+
+  \inferrule*
+  {\Circ{e_1} \\ \Circ{e_2}}
+  {\Circ{\nor{*}{e_1}{e_2}}}
+
+  \inferrule*
+  { } {\Circ{x} \vdash \Circ{x}}
+
+  \inferrule*
+  {\Circ{x} \vdash \Circ{e}}
+  {\Circ{\fix x e}}
+\end{mathpar}
+
+A variable is a placeholder, not a direct participant of computation. It stands for a circuit to be determined.
+
+Consequence relations (entailment, ..) specify the meanings of variables.
+
+\section{Dynamics}
+
+"$\Eval{e}{v}$" denotes that $e$ evaluates to $v$.
+
+\begin{mathpar}
+  \inferrule*
+  { }{\Eval{\ttt}{\ttt}}
+
+  \inferrule*
+  { }{\Eval{\ff}{\ff}}
+
+  \inferrule*
+  {\Eval{e_1}{\ttt}}
+  {\Eval{\nor{1}{e_1}{e_2}}{\ff}}
+
+  \inferrule*
+  {\Eval{e_1}{\ff} \\ \Eval{e_2}{\ttt}}
+  {\Eval{\nor 1{e_1}{e_2}}{\ff}}
+
+  \inferrule*
+  {\Eval{e_1}{\ff} \\ \Eval{e_2}{\ff}}
+  {\Eval{\nor 1{e_1}{e_2}}{\ttt}}
+
+  \inferrule*
+  {\Eval{e_2}{\ttt}}
+  {\Eval{\nor 2{e_1}{e_2}}{\ff}}
+
+  \inferrule*
+  {\Eval{e_1}{\ttt} \\ \Eval{e_2}{\ff}}
+  {\Eval{\nor 2{e_1}{e_2}}{\ff}}
+
+  \inferrule*
+  {\Eval{e_1}{\ff} \\ \Eval{e_2}{\ff}}
+  {\Eval{\nor 2{e_1}{e_2}}{\ttt}}
+
+  \inferrule*
+  {\Eval{[\fix x e/x]e}{v}}
+  {\Eval{\fix x e}{v}}
+\end{mathpar}
+
+Fact: If $\emptyset \vdash \Circ{e}$ then there exists $v$, $\Eval{e}{v}$.
+\begin{proof}
+ Induction on statics.
+\end{proof}
+
+\section{Structural Properties of Entailment}
+
+Structural properties characterizes behavior of variables.
+
+\begin{mathpar}
+ \inferrule*[right=Reflexivity]
+  { }
+  {\Circ{x} \vdash \Circ{x}}
+
+  \inferrule*[right=Substitution]
+  {\Circ{e_1} \\ \Circ{x} \vdash \Circ{x}}
+  {\Circ{[e_1/x]e_2}}
+
+  \inferrule*[right=Weakening]
+  {\Circ{e} \\ x \notin e}
+  {\Circ{x} \vdash \Circ{e}}
+
+  \inferrule*[right=Exchange]
+  {\Circ{x},\Circ{y} \vdash \Circ{e}}
+  {\Circ{y},\Circ{x} \vdash \Circ{e}}
+
+  \inferrule*[right=Contraction]
+  {\Circ{x},\Circ{y} \vdash \Circ{e}}
+  {\Circ{z} \vdash \Circ{[z,z/x,y]e}}
+\end{mathpar}
+
+Structural properties express limiting conditions on the language. For example, type is a kind of restrictions.
+
+\hyperlink{Exercises}{Exercises: BDDS}.
+
+\begin{mathpar}
+  X \stackrel{?}{=} \overline{V}_{I}(R, \overline{V}_{II}(X, S))
+\end{mathpar}
+
+How to deal with recursion?
+\begin{align*}
+  \begin{cases}
+    X = \nor 1 R Y \\
+    Y = \nor 1 X S
+  \end{cases}
+\end{align*}
+
+Expanding $X$ gives
+\begin{align*}
+    X = \nor 1 R{\nor 2 X S}
+\end{align*}
+
+Can we take this self reference formula and solve for X? We assume X = $e_X$, and is equal to $f(X)$. Seek a fixpoint for f. which is a f make the things in the left hand and right hand the same.
+
+That is the "Y combinator" a.k.a. "fixed point combinator".
+
+Example:
+\begin{figure}[H]
+\centering
+\begin{circuitikz} \draw
+    (0,2) node[nor port] (R) {}
+    (1,2) node[anchor=east] {}
+    (1,0) node[anchor=east] {}
+    (0,0) node[nor port] (S) {}
+    (R.out) to (1.5,2)
+    (S.out) to (1.5,0)
+    (R.in 1) node[anchor=east] {R}
+    (R.in 2) node[anchor=east] {X}
+    (S.in 1) node[anchor=east] {Y}
+    (S.in 2) node[anchor=east] {S}
+    (R.out) -- ++(0,-0.5) -- ($(S.in 1) +(0,0.5)$) -- (S.in 1)
+    (S.out) -- ++(0,+0.5) -- ($(R.in 2) +(0,-0.5)$) -- (R.in 2)
+\end{circuitikz}
+\caption{RS Latch}
+\end{figure}
+\begin{mathpar}
+  RSL(R, S) = \fix x {\nor 1 R{\nor 2 x S}}
+\end{mathpar}
+
+Attempting to evaluate $RSL(\ff, \ttt)$:
+\begin{align*}
+  RSL(\ff, \ttt) &= \fix x {\nor 1 \ff {\nor 2 x \ttt}} \\
+  &= \nor 1 \ff {\nor 2 {RSL(\ff, \ttt)} \ttt} \\
+  &= \nor 1 \ff \ff \\
+  &= \ttt
+\end{align*}
+
+$RSL(\ff, \ff)$ has no value as it diverges.
+
+\section{Check Coherence}
+
+We may have some undefined terms: $\fix x x$, $\frac{1}{0}$...
+
+What is the meaning of well defined?
+
+Structural properties state that we may substitute computations (v.s. values) for
+variables. It is obvious that $e$'s need not evaluate to $v$'s. With \texttt{fix},
+coherence can no longer be expressed as evaluating values. So what do we say instead?
+The issue is, in general there are many sorts of undefinedness. To handle this, the idea is to
+distinguish divergence from nonsense.
+
+Idea: To introduce ``time'' (though it introduces complexity):
+\begin{enumerate}
+\item Using time to express coherence;
+\item Using time to express ``propagation delay''.
+\end{enumerate}
+
+$e\ \text{val}$ ``final state''
+
+\begin{mathpar}
+  \inferrule*
+  { }
+  {\ttt\ \text{val}}
+
+  \inferrule*
+  { }
+  {\ff\ \text{val}}
+\end{mathpar}
+
+\textbf{Structural operational semantics(SOS)}
+
+$e \mapsto e'$ denotes a transition system.
+
+\begin{mathpar}
+  \inferrule*
+  {e_1 \mapsto e'_1}
+  {\nor 1{e_1}{e_2} \mapsto \nor 1 {e'_1}{e_2}}
+
+  \inferrule*
+  { }
+  {\nor 1{\ttt}{e_2} \mapsto \ff}
+
+  \inferrule*
+  {e_2 \mapsto e'_2}
+  {\nor 1{\ff}{e_2} \mapsto \nor 1{\ff}{e'_2}}
+
+  \inferrule*
+  { }
+  {\nor 1 \ff \ttt \mapsto \ff}
+
+  \inferrule*
+  { }
+  {\nor 1 \ff \ff \mapsto \ttt}
+
+  \inferrule*
+  {e_2 \mapsto e'_2}
+  {\nor 2{e_1}{e_2} \mapsto \nor 1 {e_1}{e'_2}}
+
+  \inferrule*
+  { }
+  {\nor 2{e_1}{\ttt} \mapsto \ff}
+
+  \inferrule*
+  {e_1 \mapsto e'_1}
+  {\nor 2{e_1}{\ff} \mapsto \nor 1{e'_1}{\ff}}
+
+  \inferrule*
+  { }
+  {\nor 2 \ttt \ff \mapsto \ff}
+
+  \inferrule*
+  { }
+  {\nor 2 \ff \ff \mapsto \ttt}
+
+\end{mathpar}
+
+\begin{enumerate}
+\item[\textbf{Preservation}] If $\Circ e$ and $e \mapsto e'$, then $\Circ{e'}$.
+\item[\textbf{Progression}] If $\Circ e$ then $e\ \text{val}$ or exists $e'$, $e \mapsto e'$.
+\end{enumerate}
+
+Progress-and-preservation denotes safety or coherence. It allows no ill-defined situations yet divergence is OK.
+
+\section{Exercises}
+
+\hypertarget{Exercises}{Exercises:}.
+
+\begin{itemize}
+    \item Give an alternate formulation of the circuit language using BDD's (binary decision diagrams).  The abstract syntax for this language is given by,
+    \begin{align*}
+      e ::= \; x\; |\; \ttt{}\;|\;\ff{}\;|\; \texttt{if}(e;e;e)
+    \end{align*}
+
+    \item Prove that $\Eval{e}{v}$ if and only if $\multival{e}{v}$,
+    where $\mapsto^{*}$ is a multi-step transition.  We have the additional rules,
+    \begin{mathpar}
+      \inferrule*
+      { }
+      {\multival{v}{v}}
+
+      \inferrule
+      {e \mapsto e^\prime \\ \multival{e^\prime}{v}}
+      {\multival{e}{v}}
+    \end{mathpar}
+
+    \item Using structural operational semantics, calculate the number of steps it takes for $RSL(\ff{},\ttt{})$ to transition to $\ttt{}$
+
+\end{itemize}
+
+\end{document}
