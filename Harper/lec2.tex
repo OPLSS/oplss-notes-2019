@@ -1,0 +1,571 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathpartir}
+\usepackage{syntax}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{cite}
+\usepackage{accents}
+\usepackage{parskip}
+
+\crefname{lemma}{Lemma}{Lemmas}
+
+\setlength{\grammarparsep}{20pt plus 1pt minus 1pt} % increase separation between rules
+\setlength{\grammarindent}{12em} % increase separation between LHS/RHS
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lemma}[thm]{Lemma}
+\newtheorem{corr}{Corollary}
+\newtheorem{definition}{Definition}[section]
+\newtheorem*{remark}{Remark}
+
+\newcommand{\entails}{\ensuremath{\vdash}}
+\newcommand{\sequent}[3]{\ensuremath{#1 \vdash{} #2 \colon{} #3}}
+\newcommand{\seqO}[2][x]{\ensuremath{#1_0,#1_1,\ldots,#1_{#2}}}
+\newcommand{\seqS}[2][x]{\ensuremath{#1_1,#1_2,\ldots,#1_{#2}}}
+\newcommand{\circuit}{\texttt{circ}}
+\newcommand{\comp}{\texttt{comp}}
+\newcommand{\RR}{\ensuremath{\mathbb{R}}}
+\newcommand{\NN}{\ensuremath{\mathbb{N}}}
+\newcommand{\ZZ}{\ensuremath{\mathbb{ZZ}}}
+\newcommand{\pcf}{\textsc{PCF}}
+\newcommand{\dsym}{\ensuremath{\,\underaccent{\dot}{\dot{\sim}}\,}}
+\newcommand{\val}{\ensuremath{\mathtt{val}}}
+\newcommand{\bind}{\texttt{bnd}}
+%\newcommand{\raise}{\texttt{raise}}
+
+\newcommand{\Ltt}{\ensuremath{\mathtt{tt}}}
+\newcommand{\Lff}{\ensuremath{\mathtt{ff}}}
+\newcommand{\Lcomp}[1]{\ensuremath{#1\;\mathtt{comp}}}
+\newcommand{\Lval}[1]{\ensuremath{#1\;\mathtt{val}}}
+\newcommand{\Lzero}{\ensuremath{\mathtt{zero}}}
+\newcommand{\Lsucc}[1]{\ensuremath{\mathtt{succ}(#1)}}
+\newcommand{\Lif}[3]{\ensuremath{\mathtt{if}(#1 ; #2 ; #3)}}
+\newcommand{\Lifz}[3]{\ensuremath{\mathtt{ifz}(#1 ; #2 ; #3)}}
+\newcommand{\Llam}[3][\tau]{\ensuremath{\lambda[#1](#2 . #3)}}
+\newcommand{\Lfix}[3][\tau]{\ensuremath{\mathtt{fix}[#1](#2 . #3)}}
+\newcommand{\Lapp}[2]{\ensuremath{\mathtt{ap}(#1, #2)}}
+\newcommand{\Lap}[2]{\ensuremath{\mathtt{ap}(#1, #2)}}
+\newcommand{\Lbind}{\ensuremath{\mathtt{bnd}}}
+\newcommand{\Lraise}{\ensuremath{\mathtt{raise}}}
+\newcommand{\Lparbnd}{\ensuremath{\mathtt{parbnd}}}
+\newcommand{\Lsplit}{\ensuremath{\mathtt{split}}}
+\newcommand{\rret}{\ensuremath{\mathtt{ret}}}
+\newcommand{\rraise}{\ensuremath{\mathtt{raise}}}
+\newcommand{\Lret}[1]{\ensuremath{\mathtt{ret}(#1)}}
+\newcommand{\LBnd}[3][\tau]{\ensuremath{\Lbind[#1](#2; #3)}}
+\newcommand{\LParnd}[3][\tau]{\ensuremath{\Lparbnd[#1](#2; #3)}}
+\newcommand{\T}[1]{\ensuremath{\mathtt{#1}}}
+
+\lstset{
+  basicstyle=\footnotesize\ttfamily,
+  breaklines=true,
+  captionpos=b,
+  keepspaces=true,
+  escapeinside={(*@}{@*)},
+  showtabs=false
+}
+
+\title{Practical Foundations for Programming Languages}
+\author{Jason Hu, Zhe Zhou, Ramana Nagasamudram}
+\date{June 20, 2019}
+
+\begin{document}
+\maketitle
+
+\section*{Lecture 2}
+
+\section{Evaluation order}
+
+In this lecture, we tackle issues related to the evaluation
+order of expressions. Traditionally, the terminology that is used
+is \emph{call-by-name} (\textsc{cbn}) and \emph{call-by-value}
+(\textsc{cbv}).  However, logically speaking, both have nothing
+to do with the notion of a ``call''.  We therefore recast these
+issues as pertaining to the semantics of variables.
+
+The key is to understand what variables in our language range over.
+This becomes especially important in languages that have a notion
+of undefinedness.  To understand this more, we shall study
+Plotkin's \pcf{} in the by-name and by-value settings.
+
+% \subsection{\pcf{}}
+
+% Add more types: boolean(2), integers($\omega$), arrow type($\to$).
+
+% \begin{align*}
+%   \tau ::= &\; 2 \mid \omega \mid \tau_{1}\rightarrow\tau_{2}
+%   \\
+%   e ::= &\; x \mid \Ltt \mid \Lff \mid \Lzero \mid \Lsucc e \mid \Lif{e}{e}{e} \mid
+%             \Lifz{e}{e}{x.e} \mid \rret(v) \mid \comp(e) \mid \LBnd[\tau]{x}{e}
+%   \\
+%   \mid &\; \Llam{x}{e} \mid \Lapp{e}{e} \mid \Lfix{x}{e}
+% \end{align*}
+
+% \begin{grammar}
+%   <\tau> ::= 2 \alt $\omega$ \alt $\tau_1 \rightarrow \tau_2 \mid \tau \comp$
+%   <e> ::= x \alt \texttt{tt} \alt \texttt{ff}
+%   \alt \texttt{if}(<e>;<e>;<e>)
+%   \alt \texttt{zero}
+%   \alt \texttt{succ}(<e>)
+%   \alt \texttt{ifz}(<e>;<e>;x.<e>)
+%   \alt \lambda[\tau](x.<e>)
+%   \alt \texttt{ap}(<e>;<e>)
+%   \alt \texttt{fix}[\tau](x.<e>)
+% \end{grammar}
+
+% \begin{align*}
+%   \tau & ::= 2 | \omega | \tau_1 \to \tau_2 \\
+%   e ::= & x | \ttt | \ff | if(e; e_1; e_2) |  zero | succ(e) | ifz(e; e_1; x. e_2) |
+%           \lambda[\tau_1](x . e) | ap(e_1 , e_2) | fix[\tau](x.e)
+% \end{align*}
+
+\section{PCF}
+
+\subsection{Syntax}
+
+\begin{align*}
+\tau ::= &\; 2 \mid \omega \mid \tau_1\rightarrow\tau_2 \\
+e ::= &\; x \mid \T{tt} \mid \T{ff} \mid \T{if}(e;e;e)
+\mid \T{zero} \mid \T{succ}(e) \mid \T{ifz}(e;e;x.e)
+\mid \Llam{x}{e} \mid \T{ap}(e;e) \mid \T{fix}[\tau](x.e)
+\end{align*}
+
+\subsection{Statics of \pcf{}}
+\label{sec:statics}
+
+\begin{mathpar}
+
+  \inferrule* [Right=]
+  { }
+  {x : \tau \entails x : \tau}
+  
+  \inferrule* [Right=]
+  { }
+  {\Ltt : 2}
+
+  \inferrule* [Right=]
+  { }
+  {\Lff : 2}
+
+  \inferrule* [Right=]
+  { }
+  {zero : \omega}
+
+  \inferrule* [Right=]
+  {e : \omega}
+  {\Lsucc{e} : \omega}
+
+  \inferrule* [Right=]
+  {x : \tau_1 \entails e_2 : \tau_2}
+  {\lambda [\tau_1] (x. e_2) : \tau_1 \rightarrow{} \tau_2}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  {e : 2 \\ e_1 : \tau \\ e_2 : \tau}
+  {\Lif{e}{e_1}{e_2} : \tau}
+
+  \inferrule* [Right=]
+  {e : \omega \\ e_1 : \tau \\ x : \omega \entails e_2 : \tau}
+  {\Lifz{e}{e_1}{x . e_2} : \tau}
+
+  \inferrule* [Right=]
+  {e_1 : \tau_2 \rightarrow{} \tau \\ e_2 : \tau_2}
+  {ap(e_1 ; e_2) : \tau}
+\end{mathpar}
+
+\subsection{Dynamics}
+
+Given in the form of a transition system.
+
+With $$ e \Downarrow v$$ there are cases when the evaluation doesn't have
+a value.  We want to distinguish cases that are supposed to be ruled out
+by statics to cases that are actually well formed.
+
+Define in terms of $e \mapsto e^{\prime}$, $\Lval{e}$.
+
+As before, but $\dots$
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  { }
+  {\Lval \Lzero}
+
+  \inferrule* [Right=]
+  {\Lval e}
+  {\Lval{succ(e)}}
+\end{mathpar} 
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  {e \mapsto e^\prime}
+  {\Lifz e{e_1}{x.e_2} \mapsto \Lifz {e'}{e_1}{x.e_2}}
+
+  \inferrule* [Right=]
+  { }
+  {\Lifz \Lzero{e_1}{x.e_2} \mapsto e_1}
+
+  \inferrule* [Right=]
+  {\Lval{\Lsucc e}}
+  {\Lifz {\Lsucc e}{e_1}{x.e_2} \mapsto [e/x]e_2 }
+
+  \inferrule* [Right=]
+  { }
+  {\Lval{\Llam{\tau_1}{x.e_2}}}
+
+  \inferrule* [Right=]
+  {e_1 \mapsto e_1^\prime}
+  {\Lap{e_1}{e_2} \mapsto \Lap{e_1^\prime}{e_2}}
+  
+  \inferrule* [Right=(by-value)]
+  {\Lval{e_1} \\ e_2 \mapsto e_2^\prime}
+  {\Lap{e_1}{e_2} \mapsto \Lap{e_1}{e_2^\prime}}
+
+  \inferrule* [Right=(by-name)]
+  {\Lval{e_2}}
+  {\Lap{\Llam{\tau_1}{x.e}}{e_2} \mapsto [e_2 / x] e}
+\end{mathpar}
+
+By-name (or lazy semantics) works well for ``negative'' types (function or product types). By-value works well for ``positive'' types (2, $\omega$). Not vice-versa.
+
+Example: In the by-name setting, it makes sense to define
+$$\overline V_{I} = \lambda [2] (x_{1}. \lambda [2] (x_{2}. if (x_{1} ; \Lff ; not
+(x_{2}))))$$
+This can be a function, exactly because the values are not evaluated. By in the by-value setting, we have to evaluate both branches of $if$ before we get the final result. That is not the meaning of $\overline V_{I}$.
+(Lot of emphasis is placed on this (but it might be misplaced)).
+
+You can encode the by-name in the by-value method but not the other way.
+Therefore by-value is superior. Hands down victory!
+
+By-name: there are no booleans, and there are no natural numbers -- you
+cannot have them.  Because undefininedness plays the role of a value.
+It is wrong to say "if $x : 2$ then $x$ converges", because $x$ can stand for arbitrary divergent program.
+Reasoning by cases is never valid in by-name semantics.
+
+\vspace{1em}
+
+What about by-value?
+We have a problem with $\texttt{fix}$ because it is defined by unrolling.
+
+By-name: $$fix[\tau](x.e)\mapsto [fix[\tau](x.e) / x]e$$
+
+By-value: ?
+
+The real issue: how do I get the semantics of variables to work?
+
+Reformulate to express by-value variables.  Formulation is called lax
+logic / CBPV / polarity (look up these words).
+
+\section{PCF-Modality}
+
+Key-idea: \textbf{modality} that distinguish computations from values (valuables)
+
+values (with strong typing): $$\dots x : \tau \dots \entails v : \tau$$
+computations (with lax/weak typing): $$\dots x : \tau \dots \entails m
+\dsym \tau$$
+
+But in every cases, variables range over values, because they have a
+$\colon$.
+
+The syntax can't adapt the same \textt{fix}; it needs to be changed.
+
+\begin{align*}
+  \tau ::= &\; 2 \mid \omega \mid \tau_{1}\rightarrow\tau_{2} \mid \Lcomp \tau
+  \\
+  v ::= &\; x \mid \Ltt \mid \Lff \mid \Lzero \mid \Lsucc v \mid \Llam{x}{m} \mid \Lcomp{m} \\
+  m ::= &\; \Lif{v}{m}{m} \mid
+            \Lifz{v}{m}{x.m} \mid
+            \rret(v) \mid
+            \LBnd{v}{x.m} \mid
+            \Lap{v}{v}
+\end{align*}
+
+\subsection{Statics of PCF-Modality}
+\label{sec:statics}
+
+\begin{mathpar}
+
+  \inferrule* [Right=]
+  { }
+  {x : \tau \entails x : \tau}
+  
+  \inferrule* [Right=]
+  { }
+  {\Ltt : 2}
+
+  \inferrule* [Right=]
+  { }
+  {\Lff : 2}
+
+  \inferrule* [Right=]
+  { }
+  {zero : \omega}
+
+  \inferrule* [Right=]
+  {v : \omega}
+  {\Lsucc{v} : \omega}
+
+  \inferrule* [Right=]
+  {x : \tau_1 \entails m_2 \dsym \tau_2}
+  {\lambda [\tau_1] (x. m_2) : \tau_1 \rightarrow{} \tau_2}
+
+  \inferrule* [Right=]
+  {m \dsym \tau }
+  {\comp(m) : \Lcomp \tau}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  {v : 2 \\ M_1 \dsym \tau \\ M_2 \dsym \tau}
+  {\Lif{v}{M_1}{M_2} \dsym \tau}
+
+  \inferrule* [Right=]
+  {v : \omega \\ e_1 \dsym \tau \\ x : \omega \entails e_2 \dsym \tau}
+  {\Lifz{v}{e_1}{x . e_2} \dsym \tau}
+
+  \inferrule* [Right=]
+  {v_1 : \tau_2 \rightarrow{} \tau \\ v_2 : \tau_2}
+  {ap(v_1 ; v_2) \dsym \tau}
+
+  \inferrule* [Right=]
+  {v_1 : \Lcomp{\tau_1} \\ x : \tau_1 \entails m_2 \dsym \tau_2}
+  {\bind(v_1 ; x. m_2) \dsym \tau_2}
+
+  \inferrule* [Right=]
+  {v : \tau}
+  {\Lret v \dsym \tau}
+\end{mathpar}
+
+\begin{lemma}[Substitution]
+\label{lemma1}
+\begin{enumerate}
+    \item If $x : \tau \entails v^{\prime} : \tau^{\prime}$ and $v : \tau$ then $[v/x]v^{\prime} : \tau^{\prime}$
+    \item If $x : \tau \entails m^{\prime} \dsym \tau^{\prime}$ and $v : \tau$ then $[v/x] m^{\prime} \dsym \tau^{\prime}$
+\end{enumerate}
+\end{lemma}
+
+\textbf{Exercise}: Check that we have progress + preservation
+
+\subsection{Dynamics of PCF-Modality}
+
+Either a computation is done or it makes a step. Values and computations are linked by introducing a computational modality.
+
+$m\; done$, $m \mapsto m^{\prime}$
+
+Example transition between computations:
+
+$\Lap{\lambda[\tau_{1}](x.e_{2}}{v_{2}}\mapsto [v_{2}/x]m_{2}$
+
+What about the dynamics of bind?
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  { }
+  {\rret(v)\; done}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule*
+  { }
+  {\Lap{\Llam{\tau}{x.m}} v \mapsto [v/x]m}
+
+  \inferrule* [Right=]
+  {m_1 \mapsto m_1^\prime}
+  {\bind(\comp(m_1) ; x . m_2) \mapsto \bind(\comp(m_1^\prime) ; x . m_2)}
+
+  \inferrule* [Right=]
+  { }
+  {\bind(\comp(\rret(v)), x. m_2) \mapsto [v/x]m_2}
+\end{mathpar}
+
+\underline{Idea}: $\tau_{1} \rightarrow \tau_{2}$ when applied is a
+computation.
+Reformulate it so that it is a total function that returns a computation:
+$\tau_{1} \rightarrow (\tau_{2} \; \comp)$
+
+Ah! : $\tau_{1} \; \comp \rightarrow \tau_{2} \comp$ would be a ``by name''
+function.
+$lsucc : \omega\; \comp \rightarrow \omega$
+
+Notice: a closed value of type $2$ is a boolean! and $\omega$ is
+actually a numeral!
+
+We recover mathematical induction because $\forall x : 2$ means for all
+values!  We can reason by cases.
+
+All of this arises from the semantics of variables.  The formulation shown
+above deals with this semantics of variables.
+
+\section{PCF-Modality-SelfRef}
+
+Q. How do we deal with self-references?
+
+Change the "$\Lcomp{m}$" to "$\comp[\tau](x.m)$". We treat all "comp" terms as a self-reference terms.
+
+\begin{align*}
+    v ::= & \cdots \mid \comp[\tau](x.m)
+\end{align*}
+
+$x$ in $\comp[\tau](x.m)$ is the
+self-reference and the value in question is the encapsulated value.
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  { \Gamma, x:\Lcomp{\tau} \vdash m \dsym \tau }
+  {\Gamma \vdash \comp[\tau](x.m) : \Lcomp{\tau}}
+\end{mathpar}
+
+One way to formulate (intuition: unroll when you inspect!),
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  {[\comp[\tau](x.m_1)/x] m_1 \mapsto m_1^\prime}
+  {\bind(\comp[\tau](x.m_1); x_2.m_2) \mapsto \bind(\comp[\tau](x.m_1^\prime);x_2.m_2)}
+\end{mathpar}
+
+\textbf{Exercise}: write down a RSL latch using this method.
+
+\section{Exceptions}
+Convenient way to express control flow.
+
+Benton and Kennedy: allow for two forms of termination in a bind!
+(divergence vs explicitly declining to converge)
+
+Generalize bind,
+
+$$\bind(v; x_{1}. m_{1} ; x_{2}. m_{2})$$
+
+where $x_{1}.m_{1}$ is the ordinary return, and $x_{2}.m_{2}$ is an
+exceptional return.
+
+$$\rret(v) \; ord \ ret$$
+$$\rraise(v) \; exe \ ret$$
+
+\begin{align*}
+  m ::= ... \mid \rret(v) \mid \rraise(v) \mid \bind(v ; x_{1} . m_{1} ; x_{2} . m_{2})
+\end{align*}
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  { }
+  {\rraise(v) : \tau_{exn}}
+\end{mathpar}
+
+The bind we have here handles both forms of return -- ordinary and
+exceptional.
+
+\subsection{Statics}
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  {v : \tau_{exn}}
+  {\rraise(v) \dsym \tau}
+  
+  \inferrule* [Right=]
+  {v : \tau \comp \\ x_1 : \tau \entails m_1 \dsym \tau^{\prime} \\ x_2 : \tau_{exn} \entails m_2 \dsym \tau^{\prime} }
+  {\bind(\comp(\rraise(v)); x_1 . m_1 ; x_2 . m_2) \dsym \tau^{\prime}}
+\end{mathpar}
+
+\subsection{Dynamics}
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  { }
+  {\bind(\comp(\rraise(v)); x_1 . m_1 ; x_2 . m_2) \mapsto [v/x_2] m_2}
+\end{mathpar}
+
+The idea is that exceptional values are shared secrets between the raiser
+and handler.
+
+(Will talk about $\tau_{exn}$ in a later lecture).
+
+\section{Parallelism}
+
+Falls out naturally.  The idea is to change the modality.
+
+Parallelism is a matter of efficiency (not correctness).  We want to be
+``work-efficient'' -- it should not be the case that you are doing more
+work just to be parallel. With by-value, we know exactly which pieces we
+can parallelize, so we are ``work-efficient''.
+
+Parallelism is incompatible with by-value.
+
+Lax type-system \textit{seems} to impose sequentiality.
+
+The essence of parallelism is sequentiality.  If two operations depend on each other, the there is not parallelism.
+
+% Computation modality is the unary case of something more general.
+% Generalize ($\tau \; \comp$) to $\tau_{1} & \dots & \tau_{n}$ which
+% represents $n$ unevaluated computations.
+
+Add to the type system $\tau_{1} \otimes \dots \otimes \tau_{n}$ which
+represents n-ary tuples of values.
+
+\begin{align*}
+  \tau ::=& \dots \mid \tau_{1} \& \tau_{2} \mid \tau_{1}\otimes\tau_{2} \\
+  v ::=& \dots \mid m_{1} \& m_{2} \mid v_{1} \otimes v_{2}
+\end{align*}
+
+Note that $m_{1} \& m_{2}$(means parallel operator) are not evaluated.
+\begin{align*}
+  m ::= \dots \mid \LParnd{v}{x . m}  \mid \Lsplit(v ; x_1, x_2 . m)
+\end{align*}
+
+\textbf{Statics.}
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  {v : \tau_1 \& \tau_2 \\ x_1 : \tau_1 , x_2 : \tau_2 \entails m \dsym \tau}
+  {\LParnd{v}{x_1.x_2 . m} \dsym \tau}
+
+  \inferrule* [Right=]
+  {v : \tau_1 \otimes \tau_2 \\ x_1 : \tau_1, x_2 : \tau_2 \entails m
+    \dsym \tau}
+  {\Lsplit(v ; x_1. x_2 . m) \dsym \tau}
+\end{mathpar}
+
+\textbf{Dynamics.}
+\begin{mathpar}
+  \inferrule* [Right=]
+  {m_1 \mapsto m_1^\prime \\ m_2 \mapsto m_2^\prime}
+  {\LParnd{m_1 \& m_2}{x_1. x_2 . m}  \mapsto
+  \LParnd{m_1 \& m_2}{x_1. x_2 . m}
+  }
+
+  \inferrule* [Right=]
+  { }
+  {\LParnd{\rret(v_1)\& \rret(v_2)}{x_1. x_2. m} \mapsto [v_1,v_2/x_1,x_2] m}
+
+  \inferrule* [Right=]
+  {m_2 \mapsto m_2^\prime}
+  {\LParnd{\rret(v_1) \& m_2}{x_1, x_2 . m} \mapsto \LParnd{\rret(v_1) \&
+    m_2^\prime }{ x_1 , x_2 . m}}
+    
+    \text{(+ the other way)}
+\end{mathpar}
+
+Last rule goes the other way as well.  Essentially we have to wait for the
+other computation to finish as well.
+
+
+\textbf{Exercise} Check that type safety continues to hold.
+
+\textbf{Take a look at supplementary notes.}
+
+Things left to do: assign a cost semantics to this language.
+
+\textbf{Take a look at the ``Brent type theorem''}
+
+% \section{Exercises}
+
+% \begin{enumerate}
+%     \item Prove that we have progress and preservation in the 
+% \end{enumerate}
+
+
+\end{document}

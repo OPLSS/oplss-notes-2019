@@ -1,0 +1,313 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathpartir}
+\usepackage{syntax}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{accents}
+\usepackage{parskip}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lemma}[thm]{Lemma}
+\newtheorem{corr}{Corollary}
+\newtheorem{definition}{Definition}[section]
+\newtheorem*{remark}{Remark}
+
+\newcommand{\entails}{\ensuremath{\vdash}}
+\newcommand{\sequent}[3]{\ensuremath{#1 \vdash{} #2 \colon{} #3}}
+\newcommand{\seqO}[2][x]{\ensuremath{#1_0,#1_1,\ldots,#1_{#2}}}
+\newcommand{\seqS}[2][x]{\ensuremath{#1_1,#1_2,\ldots,#1_{#2}}}
+\newcommand{\circuit}{\texttt{circ}}
+\newcommand{\RR}{\ensuremath{\mathbb{R}}}
+\newcommand{\NN}{\ensuremath{\mathbb{N}}}
+\newcommand{\ZZ}{\ensuremath{\mathbb{ZZ}}}
+\newcommand{\pcf}{\textsc{Pcf}}
+\newcommand{\dsym}{\ensuremath{\underaccent{\dot}{\dot{\sim}}}}
+
+\newcommand{\T}[1]{\ensuremath{\mathtt{#1}}}
+\newcommand{\Ltt}{\ensuremath{\mathtt{tt}}}
+\newcommand{\Lff}{\ensuremath{\mathtt{ff}}}
+\newcommand{\Lcomp}[1]{\ensuremath{#1\,\mathtt{comp}}}
+\newcommand{\Lval}{\ensuremath{\;\mathtt{val}}}
+\newcommand{\Lzero}{\ensuremath{\mathtt{zero}}}
+\newcommand{\Lunit}{\ensuremath{\mathtt{\langle \rangle}}}
+\newcommand{\Lif}[3]{\ensuremath{\mathtt{if}(#1 ; #2 ; #3)}}
+\newcommand{\Lifz}[3]{\ensuremath{\mathtt{ifz}(#1 ; #2 ; #3)}}
+\newcommand{\Llam}[3][\tau]{\ensuremath{\lambda[#1](#2 . #3)}}
+\newcommand{\Lfix}[3][\tau]{\ensuremath{\mathtt{fix}[#1](#2 . #3)}}
+\newcommand{\Lapp}[2]{\ensuremath{#1\, #2}}
+\newcommand{\Lbind}{\ensuremath{\mathtt{bind}}}
+\newcommand{\Lraise}{\ensuremath{\mathtt{raise}}}
+\newcommand{\Lok}{\ensuremath{\mathtt{ok}}}
+
+\lstset{
+  basicstyle=\footnotesize\ttfamily,
+  breaklines=true,
+  captionpos=b,
+  keepspaces=true,
+  escapeinside={(*@}{@*)},
+  showtabs=false
+}
+
+\title{Practical Foundations for Programming Languages}
+\author{Jason Hu, Zhe Zhou, Ramana Nagasamudram}
+\date{\today{}}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+\label{sec:intro}
+
+The semantics of variables plays a key role when comparing by-name and
+by-value languages. Recall that in a by-name setting, variables range over
+computations and in a by-value setting, they range over values.  We've seen
+in the previous lecture that by-value languages are inherently more
+expressive than by-name languages -- we can emulate by-name methods in a
+by-value setting using a \emph{computational modality}. The converse isn't 
+possible precisely because we aren't afforded control over the order of 
+evaluation in the by-name setting. The ability to control the sequencing of
+events (in the by-value setting) also provides us with a natural way to
+account for exceptions.
+
+
+Generalize $\Lcomp{\tau}$ to $\tau_{1}\&\dots\&\tau_{n}$, or
+$\tau\,\T{seq}$.  We can also have dynamically many unevaluated
+computations.  This naturally gives rise to parallelism.  Doing this in a
+by-value setting we obtain ``work-efficiency''.
+
+\textit{The central issue is the meaning/semantics of variables}.  We have
+to consider what variables range over.
+
+Recall: $\T{fix}[\tau](x.e)$ is done in an ad-hoc way.  Additionally,
+$\T{comp}(x.m)$ is also done in an ad-hoc way.
+
+\section{FPC -- recursive types}
+\label{sec:fpc}
+
+Origin: Scott's model of the $\lambda$-calculus.  Relationship between
+computability and continuity. \textit{Computational trinitarianism}.
+
+We start out working in the by-name setting, and will then move on to the
+by-value setting.
+
+\begin{align*}
+  \tau ::= 0 \mid t \mid 1 \mid\tau_{1}+\tau_{2}  \mid \tau_{1}\times\tau_{2} \\
+   \mid \tau_{1}\rightarrow\tau_{2} \mid \T{rec}(t.\tau)
+\end{align*}
+
+Where type "$1$" is $\T{unit}$. And type "$0$" is empty type, which means there is not any instance for this type. (In many settings, we want
+$\tau_{1}+\tau_{2}+\dots +\tau_{n}$).
+
+\textbf{Example}: $2 \triangleq 1 + 1$
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  {e_1 : \tau_1}
+  {\T{in}[1][\tau_{1}][\tau_{2}](e_1): \tau_1 + \tau_2}
+
+  \inferrule* [Right=]
+  {e_2 : \tau_2}
+  {2 \cdot e_2 : \tau_1 + \tau_2}
+
+  \inferrule* [Right=]
+  {e : \tau_1 + \tau_2 \\ x_1 : \tau_1 \entails e_1 : \tau \\ x_2 : \tau_2
+    \entails e_2 : \tau}
+  {\T{case}\; (e;x_1 . e_1 ; x_2 . e_2) : \tau}
+
+  \inferrule* [Right=]
+  {e : 0}
+  {\T{cant}(e) : \tau}
+
+  \inferrule* [Right=]
+  {e : [\T{rec}(t . \tau)/t]\tau}
+  {\T{fold}[t . \tau](e) : \T{rec}(t . \tau)}
+
+  \inferrule* [Right=]
+  {e : \T{rec}(t.\tau)}
+  {\T{unfold}(e) : [\T{rec}(t.\tau)/t]\tau}
+\end{mathpar}
+
+Where we have "$\T{in}[1][\tau_{1}][\tau_{2}](e_1)$" to represent building a sum type and assuming $e_1$ has the left one type "$\tau_1$". For short, we can just use notation "$1 \cdot e_1$" for instead. So does "$2 \cdot e_2$".
+
+The $\T{cant}$ rule expresses vacuity.
+
+\textbf{Example}:
+\begin{align*}
+\Ltt \triangleq& 1 . \Lunit \\
+\Lff \triangleq& 2 . \Lunit \\
+\T{if}(e; e; e)\triangleq& \T{case}(e ; \_ . e_{1} ; \_ . e_{2}) \\
+n \triangleq& 1 + 1 + \dots + 1 \\
+\tau \;\T{opt}\triangleq& \tau + 1 \\
+\omega \triangleq& \T{rec}(t . 1 + t) (\approxeq 1 + \omega) \\
+\end{align*}
+
+\begin{mathpar}
+  \inferrule* [Right=]
+  { }
+  {\T{fold}(e) \; \T{val}}
+
+  \inferrule* [Right=]
+  {e\mapsto e^\prime}
+  {\T{unfold}(e)\mapsto\T{unfold}(e^\prime)}
+
+  \inferrule* [Right=]
+  { }
+  {\T{unfold}(\T{fold}(e))\mapsto e}
+\end{mathpar}
+
+\begin{align*}
+\T{zero}\triangleq& \T{fold}[t . 1 + t](1 . \langle\rangle) \\
+\T{succ}(e)\triangleq&\T{fold}[t . 1 + t](2 . e) \\
+\T{ifz}(e ; e_{1} ; e_{2})\triangleq& \T{case}(\T{unfold}(e) ; \_ . e_{1}
+; x . e_{2})
+\end{align*}
+
+\textbf{Key idea} of self-reference is self-application (Kleene/Church).
+Let's consider the following type (``self-referential computations of type
+$\tau$''),
+
+$$\tau\;\T{self}$$
+
+Example: $\T{fact} : (\omega\rightarrow\omega)\;\T{self}$.
+
+$$\tau\;\T{self}\triangleq \T{rec}(t. t\rightarrow \tau)$$
+
+This type has a ``negative'' occurence of $t$.
+
+\begin{mathpar}
+  \inferrule* [Right=Intro]
+  {x : \tau\;\T{self}\entails e : \tau}
+  {\T{self}(x . e) : \tau\;\T{self}}
+\end{mathpar}
+
+\begin{align*}
+\T{self}(x.e)\triangleq&\T{fold}[t
+. t\rightarrow\tau](\lambda[\tau\;\T{self}](x.e)) \\
+\T{unroll}(e)\triangleq&\T{unfold}(e)(e) \\
+Y\triangleq& \lambda f.(\lambda x . f (x x)) (\lambda x . f (x x))
+\end{align*}
+
+Suppose we are given $F : (\omega\rightarrow\omega)\;\T{self}$, then how
+do we call $F$.  We use $\T{unroll}$ it to get a function and just apply
+the function we get.  That is:\\
+\begin{align*}
+    \T{selfap}(F,e)\triangleq& \T{ap}(\T{unroll}(F)(e))\\
+\triangleq& \T{ap}((\T{unfold}(F)(F))(e))\\
+\end{align*}
+
+\section{FPC by-value}
+\label{sec:fpcvalue}
+
+Main ideas are \textsc{Pcf} by-value.  If you want to have laziness you
+use $\T{comp}(\cdot)$ (the programming language analog of TBD -- to be
+determined).
+
+\begin{align*}
+  v ::= & \langle\rangle \mid \langle v_{1} , v_{2}\rangle \mid v_{1}\otimes
+  v_{2} \mid \T{comp}(m) \mid 1 . v \mid 2 . v \mid \dots \\
+  \mid & \lambda[\tau_{1}](x . m) \mid \T{fold}(v) \mid x
+\end{align*}
+
+\begin{align*}
+  m ::= \T{ret}(v)\mid \T{bnd}(v ; x.m) \mid \T{split}(v ; x_{1},x_{2}.m)
+  \mid \T{case}\dots \mid \T{cant}(v) \mid \T{ap}(v_{1},v_{2}) \mid \T{unfold}(v)
+\end{align*}
+
+How do we handle self-referentiality?
+
+$$\tau\;\T{self}\triangleq \T{rec}(t.t\rightarrow\tau \;\T{comp})$$
+
+We want to have:
+
+\begin{mathpar}
+  \inferrule* [Right]
+  {x : \tau\;\T{self}\entails m\dsym\tau}
+  {\T{self}(x.m) : \tau\;\T{self}}
+\end{mathpar}
+
+Or,\\
+
+\begin{mathpar}
+  \inferrule* [Right]
+  {x : \tau\;\T{self}\entails m\dsym\tau}
+  {\T{fold}[t
+. t\rightarrow\tau](\lambda[\tau\;\T{self}].\T{ret}(\T{comp}(m))) : \tau\;\T{self}}
+\end{mathpar}
+
+\begin{align*}
+  \T{unroll}(v:\tau\;\T{self})\triangleq& \T{unfold}(v)(v) \ \textbf{[compute $\T{unfold}(v)$ first]}\\
+  \triangleq& \T{bnd}(\T{comp}(\T{unfold}(v));x.\T{ap}(x, v)) \ \textbf{[compute $\T{ap}(x, v)$ now]}\\
+  \triangleq& \T{bnd}(\T{comp}(\T{unfold}(v))
+; x . \T{bnd}(\T{ap}(x,v) ; y . \T{ret}(y)))
+\end{align*}
+
+Additional Notes: the following part is from the textbook PFPL.
+
+How to use self referentiality to simulate an abritrary recursive function(\texttt{fix})?
+
+\begin{align*}
+  \T{fix}[\tau](x.e)\triangleq& \ \T{unroll}(\T{self}[\tau](y.([\T{unroll}(y)/x]e))) \\
+  \triangleq& \ [\T{self}[\tau](y.([\T{unroll}(y)/x]e))/y]([\T{unroll}(y)/x]e) \\
+  \triangleq& \ [\T{unroll}(\T{self}[\tau](y.([\T{unroll}(y)/x]e)))/x]e \\
+  \triangleq& \ [\T{fix}[\tau](x.e)/x]e \\
+\end{align*}
+
+Exercise: design a self-referential value of $\tau\;\T{comp}$
+
+Example: a stream of nat's -- $\T{rec}(t.(\omega\times t)\;\T{comp})$
+
+\section{Universal Domain}
+\label{sec:ud}
+
+The idea is to have one big pot or one ``universal'' type.
+Unfortunately, this also means that anything that parses does
+something.
+
+\begin{align*}
+  u ::= x \mid \T{num}[n] \mid \T{ifz}(u;u_{1};x.u_{2}) \mid \T{nil} \mid
+  \T{cons}(u_{1} ; u_{2}) \mid \dots
+\end{align*}
+
+Statics amounts to saying $x_{1}\;\Lok,\dots,x_{n}\;\Lok\entails u\;\Lok$.
+
+Dynamics $u\mapsto u^{\prime}, \; \; u \; \T{val}, \;\; u\;\T{err}$
+
+We also need $u\;\T{err}$.  For example, consider the term
+$\T{ifz}(\T{nil};u_{1};x.u_{2})\;\T{err}$.
+
+\begin{mathpar}
+  \inferrule* [Right]
+  { }
+  {x : \mathcal{U} \vdash u : \mathcal{U}}
+\end{mathpar}
+
+The one universal type is $$\mathcal{U}\triangleq\T{rec}(t. [\T{nil}
+\hookrightarrow 1, \T{cons} \hookrightarrow t\times t, \T{fun}
+\hookrightarrow t\rightarrow t, \T{num} \hookrightarrow \omega, \dots])$$
+
+For the untyped lambda calculus, you just consider the $\T{fun}$ clause.
+
+\subsection{Dynamics}
+
+\begin{align*}
+\T{nil}\triangleq&\T{fold}[\T{nil}\hookrightarrow 1] \\
+\T{num}[n]\triangleq&\T{fold}[\T{num}\hookrightarrow n] \\
+\T{cons}(u_{1};u_{2})\triangleq&\T{fold}[\T{cons}\hookrightarrow\langle
+u_{1} ; u_{2}\rangle]
+\end{align*}
+\begin{align*}
+  \T{IFZ}(u ; u_{1} ; x . u_{2})\triangleq \T{case}\Big(\T{unfold}(u) ; \;
+  & \T{num} \hookrightarrow x . \T{ifz}(x ; u_{1} ; x^{\prime}[\T{fold}[\T{num}\hookrightarrow x^{\prime}]/x]u_{2} \\
+  & \T{nil}\hookrightarrow\T{err} \\
+  & \vdots \; \; \Big)
+\end{align*}
+
+
+This is quite inefficient.
+
+\end{document}
