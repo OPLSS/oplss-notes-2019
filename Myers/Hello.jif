@@ -1,0 +1,16 @@
+import java.io.PrintStream;
+import jif.runtime.Runtime;
+
+// compile with -fail-on-exception
+public class Hello
+{
+    public Hello() {}
+    public static void main{}(principal{pp<-} pp,
+                              String[]{} args)
+        throws (SecurityException, NullPointerException)
+    {
+        Runtime runtime = Runtime[pp].getRuntime();
+        PrintStream out = runtime.out();
+        out.println("Hello, world!");
+    }
+}
