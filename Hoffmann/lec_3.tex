@@ -17,19 +17,30 @@
 
 \begin{document}
 
-\title{Resource Analysis: Lecture 3}
+\author{Jiawen Liu}
+\email{jliu223@buffalo.edu}
 
-\author{Jan Hoffmann}
-\email{jhoffmann@cmu.edu}
+\author{J\'er\'emy Thibault}
+\email{jeremy.thibault@inria.fr}
+
+\author{Shaowei Zhu}
+\email{shaoweiz@cs.princeton.edu}
+
+\title{Lecture Notes on Resource Analysis}
+\subtitle{Part 3}
 
 \maketitle
 
-\section{Short Recapitulation}
+These are lecture notes taken during Jan Hoffmann's course on resource analysis at the Oregon
+Programming Language Summer School 2019.
+
+\section{Short Recap}
 We previously added the ``tick'' construct to the language:
 % TODO: redo these, they don't look right
-\begin{grammar}
-<Expression> e ::= \dots \alt $\tickc{q}{e}$
-\end{grammar}
+\begin{align*}
+    \textrm{\emph{<Expressions>}}~e ::= \dots \mid \tickc{q}{e} \quad\quad \tick{q}{e}
+\end{align*}
+Tick allows us to specify the amount of resource consumed at a finer grain.
 
 We have also defined small-step semantics for the language
 \( <e,q> \mapsto <e', q'> \) and a typing judgment,
@@ -59,7 +70,7 @@ Remember the rule for typing lambda abstractions:
     }
 \end{mathpar}
 
-Here we formally define the operation \(|\cdot|\).
+Here we formally define the operation \(|\cdot|\) (remember that this roughly says that we cannot draw resource from the environment).
 \begin{definition}[\(|\cdot|\)]
   The functions \(|\cdot|_\tau\) and \(|\cdot|_A\) are defined mutually as follows:
   \begin{align*}
@@ -127,6 +138,8 @@ Note that in the rule for \texttt{cons}, below the line we need $q+p$ here to ma
 
 
 \section{Structural Rules and Subtyping}
+In this section, we introduce structural rules and subtyping. These kinds of rules
+allow us to type more programs without losing soundness.
 \subsection{Structural Rules}
 
 \begin{example}[Motivating Example]
@@ -167,16 +180,14 @@ Note that in the rule for \texttt{cons}, below the line we need $q+p$ here to ma
 
 \end{example}
 
-\begin{figure}
+To type these programs properly, we introduce the following two rules, the weakening rule
+and the relaxing rule:
     \begin{mathpar}
     \inferrule[Weak]{\typ{\Gamma}{q}{q'}{e}{\tau'}}{\typ{\Gamma,x:\tau}{q}{q'}{e}{\tau'}}
     \and
     \inferrule[Relax]{\typ{\Gamma}{p}{p'}{e}{\tau'} \\ q \geq p \\ q - q' \geq p - p'}{
     \typ{\Gamma}{q}{q'}{e}{\tau'}}
     \end{mathpar}
-    \caption{Structural Rules}
-    \label{fig:struct-rules}
-\end{figure}
 The weakening rule states that one might add irrelevant things into the context,
 without effects on the result.
 
@@ -185,9 +196,8 @@ than required.
 
 \subsection{Subtyping}
 
-Subtyping can be added to the language. The rules are given in Fig.~\ref{fig:subtyping}.
+Subtyping can be added to the language. The rules are as follow: 
 
-\begin{figure}
     \begin{mathpar}
     \inferrule{\tau <: \tau' \\ \typ{\Gamma}{q}{q'}{e}{\tau}}{
       \typ{\Gamma}{q}{q'}{e}{\tau'}}
@@ -203,20 +213,24 @@ Subtyping can be added to the language. The rules are given in Fig.~\ref{fig:sub
       \and
       \inferrule{A_2 <: A_1 \\ B_1 <: B_2}{A_1 \rightarrow B_1 <: A_2 \rightarrow B_2}
     \end{mathpar}
-    \caption{Rules for subtyping}
-    \label{fig:subtyping}
-\end{figure}
+
+These subtyping rules are the standard rules for subtyping. In particular, note that
+a type with a potential is a subtype of a type with a potential that is smaller: everything
+that accept some argument with some potential can also accept one that has less.
+% note: was this called potential? the p, q? or is the potential only the thing on top
+% of the list constructor?
+
 
 \section{Sharing}
 
 The current type system still has limitations, as shown by the following example.
-\begin{example}
+\begin{example}[Motivating example for sharing]
   Let us try to define and type the following function:
   \begin{align*}
     f =\ &\mathrm{fix~double}: L(\unitc) \rightarrow L(\unitc)~\mathrm{as}\\
       &\quad \lambda x.~\mathrm{match}~x~\mathrm{with} \\
       &\quad\quad [] \mapsto []\\
-      &\quad\quad y::ys \mapsto y::y::\mathrm{double}(ys)
+      \mid&\quad\quad y::ys \mapsto y::y::\mathrm{double}(ys)
   \end{align*}
   
   Here, the affine type system is having trouble typing the function, as \(y\) is used
@@ -235,7 +249,7 @@ L^4(\unitc) \xrightarrow{0|0} L^0(\unitc).
 
 We update our grammar accordingly:
 \[
-e ::= \dots | \share{e_1}{x_1}{x_2}{e_2}
+e ::= \dots \mid \share{e_1}{x_1}{x_2}{e_2}
 \]
 and the semantics:
 \begin{mathpar}
@@ -264,6 +278,10 @@ Fig.~\ref{fig:sharing}
     \inferrule{\sharing{\tau}{\tau_1}{\tau_2} \\
         q = q_1 + q_2}{
         \sharing{<\tau,q>}{<\tau_1,q_1>}{\tau_2,q_2}}
+    \and
+    \inferrule
+    {\empty}
+    {\sharing{\unitc}{\unitc}{\unitc}}
     \end{mathpar}
     \caption{Updated rules for sharing}
     \label{fig:sharing}
@@ -281,7 +299,7 @@ The rules that define sharing enforce that no resource is created or lost when s
   f = \lam{x}{L(\unitc)}{\mathrm{id}(\mathrm{double}(x))}
 \]
 
-Finally, we can still state \emph{progress} and \emph{preservation} for this type system.
+Finally, we can still state \emph{progress} and \emph{preservation} theorems for this type system.
 \begin{theorem}[Progress]If $\vdash^q_{q'} e:\tau$ and $p\geq q$ then either $e$ val or $<e, p> \mapsto <e', p'>$ for some $<e', p'>$.
 \end{theorem}
 

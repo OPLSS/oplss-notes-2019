@@ -17,19 +17,27 @@
 
 \begin{document}
 
+\author{Jiawen Liu}
+\email{jliu223@buffalo.edu}
 
-\title{Resource Analysis: Lecture 1}
+\author{J\'er\'emy Thibault}
+\email{jeremy.thibault@inria.fr}
 
-\author{Jan Hoffmann}
-\email{jhoffmann@cmu.edu}
+\author{Shaowei Zhu}
+\email{shaoweiz@cs.princeton.edu}
+
+\title{Lecture Notes on Resource Analysis}
+\subtitle{Part 1}
 
 \maketitle
 
+These are lecture notes taken during Jan Hoffmann's course on resource analysis at the Oregon
+Programming Language Summer School 2019.
 
 \section{Motivation of resource analysis}
 
 Consider two implementations of the same (mathematical) function. 
-How do we compare these two implementations? By their efficiency:
+How do we compare these two implementations? One solution is to compare their \emph{efficiency} in terms of:
 \begin{itemize}
   \item time complexity;
   \item memory usage;
@@ -37,7 +45,7 @@ How do we compare these two implementations? By their efficiency:
   \item etc.
 \end{itemize}
 
-We can also consider two kinds of analyses:
+For each of the above notions of efficiency, one can also consider two kinds of analyses:
 \begin{itemize}
     \item worst-case analysis;
     \item average-case analysis
@@ -46,20 +54,21 @@ We can also consider two kinds of analyses:
 Traditionally, these algorithm analyses are performed as follows:
 \begin{enumerate}
     \item Define the algorithm in "pseudo-code". However, this comes with several limitations.
-    First, the algorithm description's relation to the actual implementation is unclear. For instance, the
-    pseudo-code might assume the existence of a data structure representing sets, and makes assumptions
-    on its implementation and the cost of using it. 
-    The cost model is also often not specified. 
+    First, the algorithm description's relation to the actual implementation is unclear. 
+    For instance, the
+    pseudo-code might assume the existence of a data structure representing sets and make simplified assumptions
+    on its implementation. 
+    Secondly, the cost model is often not specified. 
     Finally, the representation of the input is not necessarily explicit.
-    \item The complexity is analyzed using Big-O.
+    \item The complexity is analyzed using Big-O notation.
     \begin{definition}[Big-O]\label{def:big-o}
-        Let \(f\) and \(g\) be a function from \(\mathbb{N}\) to \(\mathbb{N}\).
+        Let \(f\) and \(g\) be functions from \(\mathbb{N}\) to \(\mathbb{N}\).
         Then,
         \[
           f \in O(g) \triangleq \exists n_0, c, \forall n\geq n_0, f(n) \leq c g(n)
         \]
     \end{definition}
-    The notion of big-O also have limitations: algorithms might have large constants making them slow
+    The notion of big-O also has limitations: algorithms might have large constants making them slow
     in practice; big-O is an asymptotic notion, and it is impossible to compare programs on ``small''
     inputs; it is also impossible to compare programs that have the same asymptotic behavior; and finally,
     it is hard to generalize big-O to multiple inputs (\(O(mn)\) has no clear meaning).
@@ -74,27 +83,36 @@ We are going to analyze programs as \emph{mathematical objects}. For this, we ne
 \end{itemize}
 
 In order to take into account the constant factors, we are going to define tools to help us: proof rules,
-type systems, and other automation techniques that will help us figure the exact factors.
+type systems, and automation techniques that will help us figure the exact constants.
 
 Finally, we want to obtain bounds that come with \emph{certificates}: proofs (proof derivations) that
 show how the bounds are obtained.
 
-In this short course series, we focus on functional languages, worst-case bounds, and automatic bound inference.
+This course series focuses on functional languages, worst-case bounds, and automatic bound inference.
 
 \section{A simple language}
 \subsection{Syntax}
 
-We consider a very simple language, for which we will define several kind of 
-cost semantics. Types and expressions are defined as follows:
-\begin{grammar}
-<Types> $\tau$ ::= $\arrc{\tau_1}{\tau_2}$ // function from $\tau_1$ to $\tau_2$, written as $\tau_1 \rightarrow \tau_2$
-\alt $\unitc$
-
-<Expressions> $e$ ::= $x$ // variables, written as $x$
-\alt $\appc{e_1}{e_2}$  // function application, written as $e_1(e_2)$
-\alt $\lamc{x}{\tau}{e}$ // function with argument $x$ of type $\tau$ and body $e$, written as $\lambda(x:\tau)e$
-\alt $\trivc$   // empty expression
-\end{grammar}
+We consider a simple language, 
+for which we will define several kinds of cost semantics. 
+Types and expressions are presented in the following chart consisting of abstract syntax, concrete syntax, and explanations:
+\begin{align*}
+    \textrm{\emph{<Types>}}~\tau ::=&~\arrc{\tau_1}{\tau_2} \quad &\arr{\tau_1}{\tau_2} \quad\quad &\textrm{type for functions from $\tau_1$ to $\tau_2$}\\
+    \mid&~\unitc &\unit \quad\quad &\textrm{unit type}
+    \\
+    \textrm{\emph{<Expressions>}}~e ::=&~x \quad &x \quad\quad &\textrm{variable}\\
+    \mid&~\lamc{x}{\tau}{e} &\lambda(x:\tau).e \quad\quad &\textrm{lambda function}\\
+    \mid&~\trivc &\triv \quad\quad &\textrm{empty expression}
+\end{align*}
+%\begin{grammar}
+%<Types> $\tau$ ::= $\arrc{\tau_1}{\tau_2}$ // function from $\tau_1$ to $\tau_2$, written as $\tau_1 \rightarrow \tau_2$
+%\alt $\unitc$
+%
+%<Expressions> $e$ ::= $x$ // variables, written as $x$
+%\alt $\appc{e_1}{e_2}$  // function application, written as $e_1(e_2)$
+%\alt $\lamc{x}{\tau}{e}$ // function with argument $x$ of type $\tau$ and body $e$, written as $\lambda(x:\tau)e$
+%\alt $\trivc$   // empty expression
+%\end{grammar}
 
 Values are inductively defined as follows:
 \begin{mathpar}
@@ -106,9 +124,7 @@ Values are inductively defined as follows:
 We are now ready to describe several cost semantics for this language.
 \subsection{First Option: Structural Dynamics (or Small-Step Semantics)}
 
-We define the following judgment: $e \mapsto e'$ means expression $e$ evaluates to $e'$ in one step.
-
-\begin{figure}[htb]
+We define the following judgment: $e \mapsto e'$ meaning expression $e$ evaluates to $e'$ in one step. The definition of \(e \mapsto e'\) is given by the following rules:
     \begin{mathpar}
     \inferrule{e_1 \mapsto e_1'}{e_1(e_2) \mapsto e_1'(e_2)}
     \and
@@ -116,31 +132,32 @@ We define the following judgment: $e \mapsto e'$ means expression $e$ evaluates 
     \and
     \inferrule{e_2 \text{ val} }{(\lambda(x:\tau)e )e_2 \mapsto [e_2/x] e}
     \end{mathpar}
-    \caption{Structural dynamics for the simple language.}
-    \label{fig:small-step}
-\end{figure}
+
 
 \begin{definition}[Evaluation cost in the small-step semantics]\label{def:cost-small-step}
-Let $e:\tau$ be an expression. The \emph{evaluation cost} of $e$ is:
+Let $e:\tau$ be an expression. 
+The \emph{evaluation cost} of $e$ is:
 \begin{itemize}
-    \item $n$ if $e \mapsto ^n v$
-    \item $\infty$ otherwise
+    \item $n$, if $e \mapsto ^n v$
+    \item $\infty$, otherwise
 \end{itemize}
 \end{definition}
 Note that here the evaluation is deterministic and unique, so the cost definition makes sense.
 
-Here we also assume that all steps cost the same as a simplification, but in reality this is not necessarily the case. For instance, the substitution operation traverses the whole expression, and it would be legitimate
+\begin{remark*}
+We also assume that all steps cost the same as a simplification, but in reality this is not necessarily the case. For instance, the substitution operation traverses the whole expression, and it would be legitimate
 to give it a higher cost.
+\end{remark*}
 
-\subsection{Second Option: Evaluation Dynamics (also Known as Big-Step Semantics)}
+\subsection{Second Option: Evaluation Dynamics (Also Known as Big-Step Semantics)}
 
-The traditional way of defining big-step semantics, \(\eval{e}{}{v}\), do not capture cost.
+The traditional way of defining big-step semantics, \(\eval{e}{}{v}\), does not capture cost.
 The first idea is to define a big-step semantics with a new component \(q \in \mathbb{Q}\), that vary during
 the execution and represents the cost of the evaluation:
 \[
  \eval{e}{q}{v}
 \]
-This judgment reads ``expression $e$ evaluates to value $v$, costing $q$''.
+This judgment reads ``expression $e$ evaluates to value $v$, with cost $q$''.
 
 In fact, we will go a step further and add a \emph{metric} \(M\):
 \[
@@ -148,33 +165,29 @@ In fact, we will go a step further and add a \emph{metric} \(M\):
 \]
 This judgment means that under environment $V: \mathrm{Vars} \rightarrow \mathrm{Vals}$, with cost metric $M$,
 expression $e$ evaluates to value $v$ with cost $q \in \mathbb{Q}$.
+(The $V$ is not necessary, could also do $\evalenv{\dot}{M}{e}{q}{v}$. But will use $V$ later in soundness)
 
 Here, \(M\) is a cost metric that maps each operation to a rational cost value.
 \[
-M: \{ \text{unit, app, lam, var} \} \rightarrow \mathbb{Q}
+M: \{ \mathtt{unit, app, lam, var} \} \rightarrow \mathbb{Q}
 \] 
 Costs could be negative. This can be used to indicate that some resources are becoming available.
 
-Rules are given in Fig.~\ref{fig:eval-sem}.
-\begin{figure}[htb]
+The rules of evaluation dynamics are:
 \begin{mathpar}
-  \inferrule{ }{ \evalenv{V}{M}{x}{\costof{M}{var}}{V(x)} }
+  \inferrule{ }{ \evalenv{V}{M}{x}{\costof{M}{\mathtt{var}}}{V(x)} }
     \and
-  \inferrule{ }{ \evalenv{V}{M}{\trivc}{\costof{M}{var}}{\trivc} }
+  \inferrule{ }{ \evalenv{V}{M}{\trivc}{\costof{M}{\mathtt{unit}}}{\trivc} }
     \and
-  \inferrule{ }{ \evalenv{V}{M}{\lam{x}{\tau}{e} }{\costof{M}{var}}{ \lam{x}{\tau}{e} } }
+  \inferrule{ }{ \evalenv{V}{M}{\lam{x}{\tau}{e} }{\costof{M}{\mathtt{lam}}}{ \lam{x}{\tau}{e} } }
     \and
   \inferrule{V \vdash_M e_1 \Downarrow^{c_1} \lambda(x:\tau)e \\ 
     V \vdash_M e_2 \Downarrow^{c_2} v_2 \\
     V[x \mapsto v_2] \vdash_M e \Downarrow^c v
-  }{V \vdash_M e_1(e_2) \Downarrow^{c+c_1+c_2+\costof{M}{app}} v}
+  }{V \vdash_M e_1(e_2) \Downarrow^{c+c_1+c_2+\costof{M}{\mathtt{app}}} v}
 \end{mathpar}
-\caption{Evaluation dynamics}
-\label{fig:eval-sem}
-\end{figure}
 
-
-Here is an example of metric \(S\) we could use:
+Based on knowledge of $\beta$-reduction, the following definition of metric $S$ seems reasonable if we want the big-step semantics to be consistent with small-step semantics:
 \begin{align}
 \costof{S}{app}&=1 \\
 \costof{S}{unit} &=0 \\
@@ -182,7 +195,7 @@ Here is an example of metric \(S\) we could use:
 \costof{S}{lam} &=0
 \end{align}
 
-Using this cost metric $S$, we can prove the following theorem: 
+Indeed, under this cost metric $S$ we can prove the following theorem: 
 \begin{theorem}[Equivalence between big-step and small-step cost semantics]\label{eq-big-small}
   For any expression \(e : \tau\),
   \[
@@ -190,15 +203,18 @@ Using this cost metric $S$, we can prove the following theorem:
   \]
 \end{theorem}
 
-\paragraph{High-water mark} We want to analyze the resource consumption of a stack-based process.
-The number of occupied stack cells changes as time goes by, but at the end, everything 
-is deallocated, and the cost goes back to \(0\). 
+\paragraph{High-water mark} 
+Suppose that we want to analyze the resource consumption of a stack-based process, 
+and we define the cost to be the number of stack cells that is currently occupied.
+Clearly, the number of occupied stack cells changes as time goes by, and in the end everything 
+is deallocated with the effect that the cost goes back to \(0\). 
+Thus knowing the ``net cost'' by comparing the final state to the initial state does not seem to be very useful.
 We are instead more interested in knowing the maximum amount of stack that
-was used, at any point in the execution: this is the \emph{high-water mark}.
-We may not use the previous two cost semantics to study the high-water mark.
+was used at any point in the execution: this is the \emph{high-water mark}.
+We cannot use the previous two cost semantics to study the high-water mark.
 %
 The next two subsections are dedicated to describing cost semantics that 
-can be used to study this high-water mark.
+can be used to study this high-water mark notion for resources.
 
 \subsection{Third Option: Resource Safety}
 
@@ -206,20 +222,18 @@ The judgment for resource safety,
 \[\evalwatermark{V}{M}{q}{q'}{e}{v},\]
 means that under environment $V$, metric $M$, and given that $q$ resources are available, expression $e$ evaluates to value $v$, and $q'$ resource are available afterwards (we always require $q,q'\geq 0$; otherwise, it doesn't make sense).
 
-Semantics are shown in Fig.~\ref{fig-semReSafety}.
-
-\begin{figure}[htb]
+The semantics is as follows:
 \begin{mathpar}
 \inferrule
 {\empty}
 {
-\evalwatermark{V}{M}{q+\costof{M}{var}}{q'}{x}{V(x)}
+\evalwatermark{V}{M}{q+\costof{M}{\mathtt{var}}}{q'}{x}{V(x)}
 }
 \and
 \inferrule
 {\empty}
 {
-\evalwatermark{V}{M}{q+\costof{M}{lam}}{q}{\lam{x}{\tau}{e}}{\lam{x}{\tau}{e}}
+\evalwatermark{V}{M}{q+\costof{M}{\mathtt{lam}}}{q}{\lam{x}{\tau}{e}}{\lam{x}{\tau}{e}}
 }
 \and
 \inferrule
@@ -231,7 +245,7 @@ Semantics are shown in Fig.~\ref{fig-semReSafety}.
     \evalwatermark{V[x\mapsto v_2]}{M}{r}{q'}{e}{v}
 }
 {
-    \evalwatermark{V}{M}{q+\costof{M}{app}}{q'}{e_1(e_2)}{v}
+    \evalwatermark{V}{M}{q+\costof{M}{\mathtt{app}}}{q'}{e_1(e_2)}{v}
 }
 \and
 \inferrule
@@ -239,22 +253,27 @@ Semantics are shown in Fig.~\ref{fig-semReSafety}.
     \empty
 }
 {
-    \evalwatermark{V}{M}{q+\costof{M}{app}}{q'}{e_1(e_2)}{v}
+    \evalwatermark{V}{M}{q+\costof{M}{\mathtt{unit}}}{q'}{()}{()}
 }
 \end{mathpar}
-\caption{Big-step semantics for resource safety}
-\label{fig-semReSafety}
-\end{figure}
+In these rules, the resources \(p\), \(q\), are always non-negative. Hence, this semantics
+ensures that the resource consumption never goes below 0, and if \(\evalwatermark{V}{M}{q}{q'}{e}{v}\), \(q'\) is an upper bound on the amount of resources
+used.
 
 We can prove the following results regarding resource safety.
 \begin{lemma}
 Let $\evalwatermark{V}{M}{q}{q'}{e}{v}$ and $\evalwatermark{V}{M}{p}{p'}{e}{v'}$  
 then $q-q'=p-p'$ and $v=v'$.
-\end{lemma} 
+\end{lemma}
+Informally, this theorem states that the execution is deterministic: the result of an
+evaluation is always the same, and the amount of resources consumed too.
+
 \begin{theorem}[Resource Safety Implies Big-Step]\label{resource-safety-big}
 If $\evalwatermark{V}{M}{q}{q'}{e}{v}$ then $\evalenv{V}{M}{e}{q-q'}{v}$.
 \end{theorem} 
-Note that the theorem is \emph{not} saying: $\evalenv{V}{M}{e}{c}{v}$ implies $\evalwatermark{V}{M}{c}{0}{e}{v}$. 
+Note that the theorem is \emph{not} saying: $\evalenv{V}{M}{e}{c}{v}$ implies $\evalwatermark{V}{M}{c}{0}{e}{v}$. Indeed, there are executions accepted by the first
+big-step semantics, but in fact consume more that \(c\) resources at some point of the
+execution.
 
 \subsection{Fourth Option: Resource Monoid}
 Combining resource analysis is not straightforward: the high-water mark of a sequential
@@ -265,49 +284,56 @@ To handle this, we consider a judgment of the following form:
 \[
 \evalmono{V}{M}{e}{v}{q}{q'}.
 \]
-In this judgment, $q$ is the high-water mark and $q'$ is the quantity of left-over resources ($q, q' \geq 0$).
+In this judgment, $q$ is the high-water mark and $q'$ is the quantity of left-over resources ($q, q' \geq 0$). Some rules are given below:
 
-\begin{figure}[htb]
-\centering
 \begin{mathpar}
 \inferrule
 {
-    \costof{M}{var} \geq 0
+    \costof{M}{\mathtt{var}} \geq 0
 }
 {
-    \evalmono{V}{M}{x}{V(x)}{\costof{M}{var}}{0} 
+    \evalmono{V}{M}{x}{V(x)}{\costof{M}{\mathtt{var}}}{0} 
 }
 \and
 \inferrule
 {
-    \costof{M}{var} < 0
+    \costof{M}{\mathtt{var}} < 0
 }
 {
-    \evalmono{V}{M}{x}{V(x)}{0}{-\costof{M}{var}}
+    \evalmono{V}{M}{x}{V(x)}{0}{-\costof{M}{\mathtt{var}}}
 }
-
-
-
+\and
 \inferrule
 {
-    \costof{M}{app} \geq0 \and
+    \costof{M}{\mathtt{app}} \geq 0 \and
     V \vdash_M e_1 \Downarrow \lambda(x:\tau)e \mid (q,q')  \and
     V\vdash_M e_2 \Downarrow v_2 \mid (p, p')
     \and
     V[x\mapsto v_2] \vdash_M e\Downarrow v \mid (r, r')
 }
 {
-    V \vdash_M e_1(e_2) \Downarrow v \mid (\costof{M}{app},0) \cdot (q,q') \cdot (p,p') \cdot (r,r')
+    V \vdash_M e_1(e_2) \Downarrow v \mid (\costof{M}{\mathtt{app}},0) \cdot (q,q') \cdot (p,p') \cdot (r,r')
 }
-
+\and
+\inferrule
+{
+    \costof{M}{\mathtt{app}} < 0 \and
+    V \vdash_M e_1 \Downarrow \lambda(x:\tau)e \mid (q,q')  \and
+    V\vdash_M e_2 \Downarrow v_2 \mid (p, p')
+    \and
+    V[x\mapsto v_2] \vdash_M e\Downarrow v \mid (r, r')
+}
+{
+    V \vdash_M e_1(e_2) \Downarrow v \mid (\costof{M}{0, -\mathtt{app}}) \cdot (q,q') \cdot (p,p') \cdot (r,r')
+}
 \end{mathpar}
- \caption{Semantics for resource monoid method. For simplicity we only list the rule for app when its cost is nonnegative. The definition of the operator $\cdot$ is left as an exercise.}
- \label{fig:sem-resource-monoid}
-\end{figure}
+The main change in these definitions is the addition of a special operator, \(\cdot\), that
+allows composing pairs consisting of a high-water mark and an amount of leftover resources.
 
 \paragraph{Homework} define the operator $\cdot$: $(p,p') \cdot (q,q')$ so that the following theorem holds.
 
-\begin{theorem}
+\begin{theorem}[Equivalence Between the Resource Monoid and Resource Safety]
+The following propositions hold:
 \begin{enumerate}
     \item If $V\vdash_M e \Downarrow v \mid (q, q')$ then $V\vdash_{q'}^q e \Downarrow v $.
     \item If $V\vdash_{q'}^q e \Downarrow v$ then $V \vdash e \Downarrow v \mid (p, p')$ and $p\leq q$.
@@ -318,4 +344,3 @@ In this judgment, $q$ is the high-water mark and $q'$ is the quantity of left-ov
 \end{document}
 \endinput
 %%
-%% End of file `sample-manuscript.tex'.
