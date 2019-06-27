@@ -1,0 +1,107 @@
+import java.io.PrintStream;
+
+/**
+ * The class BattleShip is responsible for coordinating gameplay
+ * between two Players, P1 and P2.
+ */
+class BattleShip[principal P1, principal P2] authority (P1, P2) {
+    /**
+     * The number of covered coordinates that each player is to 
+     * have on their board. Players can have any number of ships,
+     * so long as the ships cover this number of squares.
+     */
+    public static final int{*<-*} NUM_COVERED_COORDS = 10;
+
+    public void play{P1<-* meet P2<-*}(PrintStream[{}]{P1<-* meet P2<-*} output) 
+      throws (SecurityException, IllegalArgumentException{P1<-* meet P2<-*})
+      where authority (P1, P2) {
+
+        if (output == null) throw new IllegalArgumentException("Null output");
+
+
+        output.println("Playing battleships, with each player having " 
+                       + NUM_COVERED_COORDS + " covered coordinates");
+
+        // instantiate the two players
+        Player[P1,P2] player1 = new Player[P1,P2]();
+        Player[P2,P1] player2 = new Player[P2,P1]();
+
+
+
+        // Initialize the two players.
+        output.print("  Initializing....");
+        
+        // Player 1 first creates a board
+        Board[{P1->*;P1<-*}] proposed1 = player1.init(NUM_COVERED_COORDS);
+        
+        // Player 2 endorses it (since Player 2 doesn't care where the 
+        // pieces are located).
+        Board[{P1->*;P1<-* meet P2<-*}] accepted1 = player2.endorseBoard(proposed1);
+        
+        // Player 1 stores the endorsed board.
+        player1.storeBoard(accepted1);
+
+        // Similarly for Player 2: create a board, Player 1 endorses, and board 
+        // is stored.
+        Board[{P2->*;P2<-*}] proposed2 = player2.init(NUM_COVERED_COORDS);
+        Board[{P2->*;P2<-* meet P1<-*}] accepted2 = player1.endorseBoard(proposed2);
+        player2.storeBoard(accepted2);
+        
+        output.println(" Done.");
+
+        // These fields record how many hits each player has scored.
+        // The game continues until one of the players has
+        // scored NUM_COVERED_COORDS hits.
+        int player1Hits = 0;
+        int player2Hits = 0;
+
+        output.println("  Playing rounds...");
+        
+        // loop until a player hits all the covered co-ordinates.
+        while (player1Hits < NUM_COVERED_COORDS && player2Hits < NUM_COVERED_COORDS) {
+
+            // get player 1's query
+            Coordinate[{P1<-*}] play1Query = player1.getNextQuery();
+            
+            // Player 1's query is endorsed by Player 2.
+            Coordinate[{P1<-* meet P2<-*}] play1QueryEnd = player2.endorseQuery(play1Query);
+
+            output.print("\t"+PrincipalUtil.toString(P1)+": " + 
+			 (play1QueryEnd==null?"null":play1QueryEnd.toString()) + 
+                         "?  " );
+
+            // Player 2 processes Player 1's query
+            boolean result = player2.processQuery(play1QueryEnd);
+            player1Hits += result ? 1 : 0;
+            output.print((result?"Y":"N"));
+
+            
+            if (player1Hits < NUM_COVERED_COORDS) {
+                // player 1 hasn't won, so let player 2 ask a query...
+                Coordinate[{P2<-*}] play2Query = player2.getNextQuery();
+                
+                //player 1 endorse's the query
+                Coordinate[{P1<-* meet P2<-*}] play2QueryEnd = player1.endorseQuery(play2Query);
+
+                output.print("   "+PrincipalUtil.toString(P2)+": " + 
+			     (play2QueryEnd==null?"null":play2QueryEnd.toString()) 
+                             + "?  ");
+
+                // get player 1 to process player 2's query
+                boolean result2 = player1.processQuery(play2QueryEnd);
+                
+                player2Hits += result2 ? 1 : 0;       
+                output.print((result2?"Y":"N"));
+                
+                // print a running total of the scores...
+                output.println("   Score: " + player1Hits + " vs. " + player2Hits);
+            }
+        }
+
+        // Let's see who won...
+        output.println("\n");
+        output.println((player1Hits >= NUM_COVERED_COORDS ? PrincipalUtil.toString(P1) 
+                                                          : PrincipalUtil.toString(P2)) 
+                       + " won!");
+    }
+}

@@ -1,0 +1,174 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+%\usepackage[mathletters]{ucs}
+\usepackage{lscape}
+\usepackage[english]{babel} 
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[ligature, inference]{semantic}
+\usepackage{fixltx2e}
+\usepackage{amsmath, listings, amsthm, amssymb, xspace}
+\usepackage{amsmath}
+\usepackage{inconsolata}
+\usepackage{bussproofs}
+\usepackage{mathpartir}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{hyperref}
+\usepackage{stmaryrd}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+\lstset{basicstyle=\tt}
+\usepackage{unicode-math-defs}
+\newtheorem{definition}{Definition}
+\begin{document}
+
+%
+% = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % % % % % % % % % % % % % %\inferrule* % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
+% = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+%
+% The Title, Author Name, Date, and abstract go here
+
+\title{Secure Typed Programming Languages\\ Communication}
+\author{Andrew Myers}
+\date{\today}
+
+\maketitle
+%$\oplus \vdash \vDash$
+%$\inference*{top}{bot}[name]$
+
+%\[
+%\inference{
+%\inference{A}{B}[\&L\textsubscript{1}]
+%~~~
+ %\inference{\overline{C}^{ID_C}}{ D}[\&L\textsubscript{1}]
+%~
+%}{E}[\&R]
+%\]
+%\[
+%\begin{matrix}
+% &&  A & \\
+%&\huge\diagup & \huge| & \huge\diagdown \\
+%B & &  C &  & D\\
+%&\huge\diagdown & \huge| & \huge\diagup \\
+%&& E
+%\end{matrix}
+%\]
+\section{Jif}
+Started off with a Jif code example (\texttt{Hello.jif}) which can be found in the Jif distribution. 
+
+\lstinputlisting{Hello.jif}
+
+Principals are first-class values that can be used to express security policies. In the example we see that the \texttt{Runtime} class is parameterized by  the principal pp. From principals we can build labels to enforce confidentiality (limit the principals that the value can flow to) and integrity (limit the principals that can influence the value).
+
+In the language that was defined in class we handled illegal flows due to control flow using a program counter label, which determines which variables are allowed to be written to depending on the label of the boolean that determines the direction of control flow. Since Java has exceptions, Jif needs to handle control flow due to exceptions too.
+
+Jif supports dynamic checking of labels: if we check that a label L can flow to L2 with a dynamic check, then code is allowed to let values with label L flow to values with label L2 in the body of the if.
+
+\begin{lstlisting}[language=Java]
+int{L} x; 
+int{L2} y; 
+if (L <= L2) { y = x; }
+\end{lstlisting}
+
+The second example is the game Battleship, a board game in which the players should not be able to see each other's ships. The example demonstrates several classes parameterized by principals and labels. Lists are parameterized by the label that elements of the lists have, and lists also have a label for the structure of the list itself. We can refer to the label of a variable using that variable; a list labeled with {this} will get the same label as this.
+
+\begin{landscape}
+\lstinputlisting{Battleship.jif}
+\end{landscape}
+
+Jif has a limited form of dependent types to handle first class principals. It also supports downgrading; endorse and declassify, to relax the integrity and confidentiality.
+
+
+\section{Secure Program Partitioning}
+
+Distributed systems are difficult to write. Secure program partitioning in Swift \cite{chong2007secure} and Jif/split \cite{zdancewic2001untrusted} attempts to alleviate this by allowing client-server applications to be written as a single program rather than as a separate client and server. The program can automatically be partitioned to run as a distributed system. The Swift system for web applications compiles the server part of the program to Java and the client UI part of the program to Javascript. The compiler synthesizes a protocol with which the server and the client communicate with each other. The Jif compiler checks the integrity and confidentiality of the program. 
+
+The splitter ensures that secret data is kept on the server and not sent to the client. Trusted computation is done on the server, and optionally by the client for performance reasons, but that computation must be verified on the server. An example is web form validation: the client side Javascript can verify that an email address field contains a syntactically valid email address, but since the server does not trust the client, the server must redo that check. It is still worthwhile to do the check on the client to give feedback to the user with lower latency. 
+
+We can also describe a trust configuration, which the splitter can use to generate different code. Therefore Swift can improve productivity as well as security; we do not need to manually rewrite the program to take trust configuration changes into account.
+
+\section{Showing Enforcement of Noninterference}
+Now, we seek to prove that a type system enforces termination insensitive noninterference. This was originally defined in Volpano's '96 paper \cite{volpano1996sound}, which shows that certifying a program for secure information flow can be done with proofs of noninterference. That is, all well-typed programs enforce noninterference.
+
+We recall that for a given state $s_1$ and $s_2$, noninterference means that $s_1 \sim_L s_2 \Rightarrow{} \llbracket{} s_1 \rrbracket{} \approx_L \llbracket{} s_2\rrbracket{}$.
+Furthermore, we define a state $s = (c, \gamma)$ where $\gamma : \text{var} \rightarrow{}  \mathbb{Z}$ is a store that contains the values of all variables.\\
+Let L be  an arbitrary lattice element, then
+\[\gamma_1 \sim_L \gamma_2 \Leftrightarrow \forall x \in Var. \Gamma(x) \sqsubseteq L \Rightarrow \gamma_1(x) =\gamma_2(x)\]
+Intuitively, this says that two stores are low-related if the low variables in the stores have the same values. then we can write, with $c_1$ being our command and $\gamma_1$ being our state:
+\[ (c_1, \gamma_1) \sim_L  (c_2, \gamma_2) \overset{\triangle}{\Leftrightarrow}\gamma_1 \sim_L \gamma_2\] 
+Now, if we assume big-step semantics, we can take a state $(c, \gamma) \Downarrow \gamma'$, and only get a new state if our command is convergent. 
+
+We now define our program behavior as 
+
+  \[ \llbracket{} s \rrbracket{} = \llbracket (c, \gamma) \rrbracket = \begin{cases} 
+   \gamma' \texttt{ if } (c, \gamma )\Downarrow \gamma' \\
+   \bot \texttt{ otherwise}
+   \end{cases}
+\]
+
+Thus, we note that \[\llbracket{} s_1\rrbracket{} \approx_L \llbracket{} s_2\rrbracket{} \begin{cases} \texttt{ if } \llbracket{}s_1 \rrbracket{}= \bot \wedge \llbracket{}s_2\rrbracket{}=\bot \\
+\texttt{ or } \llbracket{}s_1\rrbracket{}=\gamma_1 \wedge \llbracket{}s_2\rrbracket{} =\gamma_2 \wedge \gamma_1 \sim_L \gamma_2\end{cases}\]
+Then, we can write our termination insensitive noninterference statement as follows 
+\[ \gamma_1\sim_L\gamma_2 \wedge pc \vdash c \wedge(( c_1, \gamma_1) \Downarrow \gamma_1' \wedge (c_2, \gamma_2) \Downarrow \gamma_2'\Rightarrow{} \gamma_1' \sim_L \gamma_2')\]
+We can prove our noninterference statement on derivation of  $c, \gamma_1 \Downarrow \gamma_1'$ via a series of cases. \\\\
+Our first case is the trivial case of $skip$  \[\gamma_1'=\gamma_1 \texttt{ and } \gamma_2'=\gamma\] 
+This trivially follows to be \[\gamma_1'\sim_L \gamma_2'\]
+Our next case is  $c=(x:=a)$  and we define as follows.
+\[\Gamma(x) \not\sqsubseteq L \]\[
+\gamma_1' =\gamma_1[x\Rightarrow{} v_1] \texttt{ and } \gamma_2' =\gamma_2[x\Rightarrow{} v_2]\] Therefore,  $\gamma_1'\sim_L \gamma_2'$, which follows because of the low equivalences. \\
+Our next case is $x:=a$ and we define it as 
+ \[ \Gamma(x) \sqsubseteq{} L, pc \sqsubseteq{} L , \vdash a: l, l \sqsubseteq{} L\] 
+ To prove this, we need a typing rule to ensure $a$ only uses low variables which are the same in both expressions. This lemma is written below. 
+ \[ \vdash a : l \wedge l \sqsubseteq{} L \wedge \gamma_1 \sim_L \gamma_2 \Rightarrow{} a \texttt{  has the same values in }\gamma_1 \texttt{ and } \gamma_2\]
+This lemma means that  \[\gamma_1' =\gamma_1 [x\Rightarrow{} v]\] \[\gamma_2' =\gamma_2[x\Rightarrow{} v]\] \[ \gamma_1'\sim_L \gamma_2'\]
+
+Another case is that of sequential composition, where $c=c_1; c_2$ If $c$ evaluates to a final state, then $c_1$ and $c_2$ can be evaluated to a final state. The technique of big step evaluation says that \[(c_1, \gamma_1 )\Downarrow \gamma_1'' \texttt{ and }(c_2, \gamma_1'')\Downarrow \gamma_1'\] 
+and 
+\[(c_1, \gamma_2) \Downarrow \gamma_2'' \texttt{ and } ( c_2, \gamma_2'') \Downarrow \gamma_2'\]
+then by induction both $\gamma_1'' \sim_L \gamma_2''$  and $\gamma_1' \sim_L \gamma_2'$ hold.\\\\
+Another example is the case of while.  $c=\texttt{ while } b \texttt{ do } c'$
+We can define this as  a series of cases. \\
+Our first case is where case where $b$ evaluates to false and is low. \[b, \gamma \Downarrow \texttt{ false } \texttt{ and } \vdash b: l \texttt{ and } l \sqsubseteq{} L \] 
+This is trivial and we note that  $\gamma_1'= \gamma_1$, $\gamma_2'=\gamma_2$.\\\\
+    The next case is where $b$ evaluates to true and is low, e.g, $(b, \gamma ) \Downarrow \texttt{ true }$. We start in state $\gamma$ and after evaluating the body once, we end up in $\gamma''$, and after the loop finishes we end up in $\gamma'$ so we can represent this state transition as follows.
+    
+    \[(c', γ) ⇓ γ''\]
+    \[\texttt{while } b \texttt{ do } c', γ''⇓γ'\]
+      By induction, we get the following: $\gamma_1'' \sim_L \gamma_2''$ and $\gamma_1' \sim_L\gamma_2'$.\\\\
+        
+        We leave the case of where $b$ and while are not low as an exercise to the reader. The key to proving these is an additional \emph{high-pc} lemma, which says that execution of a command that type-checks in a high pc cannot cause low-observable effects to the store:
+       
+        \[
+          pc ⊢ c ~∧~ pc \not\sqsubseteq L ~∧~ c,γ⇓γ' ~~⇒~~
+          γ\sim_L γ'
+        \]
+    
+        This lemma is easily proved using induction on the evaluation of commands.
+        
+        We also leave the case of \texttt{if} commands to the reader.
+
+\section{Modeling Nondeterminism}
+
+To handle nondeterminism (e.g., arising from concurrency), we need a small-step semantics rather than a big-step semantics. Small-step semantics make it difficult to deal with the program counter going back down at the end of high-security contexts introduced by \texttt{if} and \texttt{while} commands. In general, the two executions of the program that we're comparing may end up executing copmletely different commands. For example, a command \texttt{if h then c1 else c2}
+, so we need to define what it means for two states with different commands to be related: $(c_1, \gamma_1) \sim_L (c_2, \gamma_2)$. To do this we need to add label tracking to the small step semantics, and prove that the new semantics faithfully simulates the original semantics.
+
+In the proof by induction on the small steps we have two kinds of cases: steps in which the program counter is low and steps in which the program counter is high. 
+For the low cases we have to prove that if we start in two related states $(c_1,\gamma_1) \sim_L (c_2, \gamma_2)$, then the states $(c_1', \gamma_1') \sim_L (c_2', \gamma_2')$ that they step to are also related.
+For the high cases we know that the commands preserve indistinguishability because commands with a high program counter cannot affect the low variables: if $(c_1, \gamma_1) \sim_L (c_2, \gamma_2)$ and $(c_1, \gamma_1)$ steps to $(c_1', \gamma_1')$, then we prove that $(c_2,\gamma_2) \sim_L (c_1', \gamma_1')$.
+
+Small step proofs are more work than big step proofs. Pottier and Simonet \cite{pottier2003information} invented a different method to deal with small step proofs called "brackets". They define a new semantics that simultaneously executes the two programs, and marks the places in which the programs differ with brackets. States look like $c = \_\_\_<c_1,c_2>\_\_\_$, where the lines denote parts of the state that are the same in both (the parts with a low pc), and the brackets indicate parts of the state that are different in both (the parts with a high pc). If we show that the new semantics simulates the execution of two separate programs, then type soundness for the new semantics gives us noninterference. This proof strategy recovers some of the ease of the proof with the big step semantics.
+\bibliographystyle{unsrt}
+\bibliography{bib}
+\end{document}
