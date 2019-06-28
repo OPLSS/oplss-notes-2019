@@ -1,0 +1,312 @@
+\documentclass[11pt]{article}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{amssymb}
+
+\usepackage{color}
+\newcommand{\todo}[1]{{\color{red} #1}}
+
+\parskip 1ex
+\setlength{\parindent}{0pt}
+
+%\title{Secure Compilation, Lecture 4 (Amal Ahmed)}
+\title{Compositional Compiler Verification and Secure Compilation}
+\author{Secure Compilation, Lecture 4, Amal Ahmed}
+\date{Summer 2019}
+
+\usepackage{listings}
+
+\lstset{
+  basicstyle=\ttfamily
+}
+
+\newcommand{\code}{\texttt}
+\newcommand{\compile}{\rightsquigarrow}
+\newcommand{\imp}{\ensuremath{\longrightarrow}}
+
+\newtheorem{defn}{Definition}[section]
+\newtheorem{thm}{Theorem}[section]
+
+%taken from
+%https://tex.stackexchange.com/questions/122473/how-to-create-up-arrow-with-two-heads
+%because this does not appear to be a standard symbol
+\newcommand\twouparrow{%
+\mathrel{\mathchoice
+  {\raise2pt\hbox{%
+  \ooalign{\hss$\uparrow$\hss\cr\lower2pt\hbox{%
+  $\uparrow$}}}}
+  {\raise2pt\hbox{%
+  \ooalign{\hss$\uparrow$\hss\cr\lower2pt\hbox{%
+  $\uparrow$}}}}
+  {\raise1.5pt\hbox{%
+  \ooalign{\hss$\scriptstyle\uparrow$\hss\cr\lower1.5pt\hbox{%
+  $\scriptstyle\uparrow$}}}}
+  {\raise1.1pt\hbox{%
+  \ooalign{\hss$\scriptscriptstyle\uparrow$\hss\cr\lower1.1pt\hbox{%
+  $\scriptscriptstyle\uparrow$}}}}
+}}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+\begin{defn}[Compiler Correctness]
+  More accurately called semantics-preserving compilation.
+  \[s \compile t  \imp  s \approx t\]
+  If $s$ compiles to $t$, then $s$ is equivalent to $t$.
+\end{defn}
+
+\subsection{Compiler Verification History}
+
+Compiler verification has been historically viewed as an important problem.
+
+In 2006, ``Formal certification of a compiler back-end or: programming
+a compiler with a proof assistant'' (Leroy '06, CompCert) was
+published.
+
+Following that:
+\begin{itemize}
+\item Lochbihler '10:  ``Verifying a compiler for Java threads''
+\item Myreen '10:  ``Verified just-in-time compiler on x86''
+\item Sevcik et al '11:  ``Relaxed-memory concurrency and verified compilation''
+\item Zhao et al '13:  ``Formal verification of SSA-based optimizations for LLVM''
+\item Kumar et al '14:  ``CakeML:  A verified implementation of ML''
+\end{itemize}
+
+Why did CompCert have such an impact?
+\begin{itemize}
+\item Demonstrated feasibility and that it brings tangible benefits
+\item Proof architecture for others to follow/build on
+\end{itemize}
+
+CompCert's main problem was that it only guaranteed correct
+compilation for whole programs, which did not allow linking with
+low-level libraries or code from other languages.
+
+
+\subsection{Compositional Compiler Verification}
+
+Because programs are usually linked after compilation, we want to
+verify compilers in this setting as well.
+
+Issue:  How do we express equivalence in this setting?
+
+\paragraph{Whole-Program Compiler Correctness}
+\[P_s \compile P_T  \imp  P_s \approx P_T\]
+
+CompCert sets up a relation $R$ that maintains relatedness between the
+source and target language through steps in simulation.  This is
+behavior refinement.
+
+\begin{defn}[Behavior Refinement]
+  \[P_T \sqsubset P_S  \triangleq
+    \forall n.~P_T \mapsto^n P_T'  \imp  \exists m.~P_S \mapsto^mP_S'
+    \wedge T_T \simeq T_S \]
+  If every trace of the target program is related to a trace of the
+  source program (target behaviors are a subset of source behaviors),
+  the target program's behavior refines the source program's
+  behavior.
+\end{defn}
+
+\paragraph{Correct Compilation of Components}
+This is hard to express because pre-linking programs don't run.
+
+We want $e_T$ linked with $e_T'$ to be equivalent to $e_S$ linked with
+something unknown, where $e_T'$ may be produced by
+\begin{itemize}
+\item the same compiler,
+\item a different compiler for the same language,
+\item a compiler for a different language,
+\item or a compiler for a language very different from the current
+  source (meaning the behavior of $e_T'$ may not be expressible in the
+  source).
+\end{itemize}
+
+Several verified compilation projects, listed (roughly) from
+least-compositional to most-compositional:
+\begin{tabular}{|c|p{4in}|}
+  \hline
+  \textbf{Project}  &  \textbf{What it allows linking with} \\
+  \hline
+  CompCert & Nothing \\
+  \hline
+  SepCompCert (Kang et al '16)  &  Compiled with same compiler \\
+  \hline
+  Pilsner (Neis et al '15)  &  Different compiler, same source \\
+  \hline
+  Compositional CompCert (Stewart et al '15)  &  Compiled from
+  different language \\
+  \hline
+  Multi-Language ST (Perconti-Ahmed '14)  &  Compiled from very
+  different language (may not be expressible in the source) \\
+  \hline
+\end{tabular}
+
+
+
+\section{SepCompCert}
+This project allowed separate modules compiled by the same compiler to
+be linked.
+\begin{itemize}
+\item Level A Correctness:  Separate modules may be linked which were
+  compiled by the same set of passes and optimizations.
+\item Level B Correctness:  Separate modules may be linked which were
+  compiled by the same set of passes but some intra-language
+  optimizations may be omitted.
+\end{itemize}
+
+
+
+\section{Pilsner}
+The theorem for correctness in Pilsner is
+\[x:\tau' \vdash e_s : \tau \compile e_t  \imp
+  x:\tau' \vdash e_s \simeq e_t : \tau \]
+
+\begin{defn}[Cross-Language Relation]
+  \[e_s \simeq e_t  \triangleq
+    \forall e_s', e_t'.~ \vdash e_s' \simeq e_t' : \tau'  \imp
+      \vdash e_s[e_s'/x] \simeq e_t[e_t'/x] : \tau \]
+  Two programs in the source and target language are related if the
+  things they link with being related implies they will be.
+  %\todo{Yes, she seems to have defined this circularly.}
+\end{defn}
+
+Difficulties:
+\begin{itemize}
+\item To determine whether you can actually link with a given $e_t'$,
+  you need to come up with a related $e_s'$
+\item Cannot link with an $e_t'$ which is not expressible in the
+  source language
+\item Cannot easily have an intermediate language with cross-language
+  relations because transitivity of different relations is difficult
+\end{itemize}
+
+
+
+\section{Compositional CompCert}
+Compositional CompCert allows linking with programs compiled from a
+different source language, but still requires significant similarities
+with the current language.
+
+\begin{itemize}
+\item Language-independent linking:  go run the external code for a
+  while and come back with a guarantee of interaction
+  \begin{itemize}
+  \item Because it used a uniform memory model across all languages
+    used in the compiler, it doesn't scale to languages with different
+    memory models than their targets
+  \end{itemize}
+\item Structured simulation
+  \begin{itemize}
+  \item Transitivity of relations between languages used in the
+    compiler requires only a restricted set of memory transformations
+    be used
+  \end{itemize}
+\end{itemize}
+
+Transitivity is easy to show across all the languages because the same
+relation is used between all the languages.
+
+
+
+\section{Multi-Language ST}
+To determine whether a source program and a target program are
+equivalent when linking is required, interoperability semantics are
+given for the two languages to allow the linked-in component $e_t'$
+(in the target language) to interoperate with $e_s$ itself.
+\begin{itemize}
+\item Doesn't require a source-language translation of $e_t'$
+\item Doesn't require $e_t'$ to be expressible in the source language
+\end{itemize}
+
+Have interoperability boundaries $\mathcal{ST}$ (from target to
+source) and $\mathcal{TS}$ (from source to target).  These boundary
+definitions are based on the expected type.
+
+\begin{defn}[Equivalence of Programs]
+$e_S \approx e_T  \triangleq  e_S \approx^{ctx} \mathcal{ST}e_T$
+\end{defn}
+
+What we want to show: If we link $e_t$ with $e_t'$ where $e_s \compile
+e_t$, we get
+\[\mathcal{TS}(e_s(\mathcal{ST}e_t')) \approx^{ctx} e_t e_t'\]
+where $e e'$ is the linking of two components $e$ and $e'$.
+
+For multiple languages, such as including an intermediate language
+between the source and the target, the same approach works, simply
+with another boundary included between the source and target
+(e.g. $\mathcal{ST}$ would become $\mathcal{SIT}$).
+\begin{itemize}
+\item Because we have the same contextual equivalence relation across
+  all the languages, by transitivity, we can still easily show the
+  source program is semantically-equivalent to the target program.
+\end{itemize}
+
+Points to note:
+\begin{itemize}
+\item Arbitrary behaviors from the target language interact with
+  behaviors from the source, even if these are not available in the
+  source.
+\item Boundaries are syntactic constructs added to languages to
+  ``embed'' target code into source code, not functions.
+  \begin{itemize}
+  \item When you reach a boundary, the target language is run using
+    target semantics.
+  \item The boundary converts the result into source semantics when
+    done.
+  \end{itemize}
+\end{itemize}
+
+
+
+\section{Generic Compositional Compiler Correctness}
+Each approach discussed above has a separate way of specifying whether
+the translation is correct.  Is there a generic compositional
+correctness theorem?
+
+Components of generic theorem:
+\begin{itemize}
+\item Linking set $\mathcal{L}$, members of which are pairs of target
+  components $e_t$ and proofs $\phi$ they are suitable for linking
+  (e.g. in Pilsner, $\phi$ contains a source component $e_s$ and a
+  proof that $e_s \simeq e_t$ for the paired target component $e_t$)
+\item Source-target linking medium $\hat{S}$ (how the component linked
+  in the target language may interact with the source language)
+\item Lift relation $\twouparrow$ to lift the linked-in code $e_t'$
+  from the target language to $\hat{S}$
+\item Relation $\bowtie$ describing semantics of linking (both for
+  $\hat{S}$ with $S$ and for $T$ with $T$)
+\end{itemize}
+
+\begin{thm}[Generic CCC Theorem]
+  \begin{tabbing}
+    xxxx\=xxxx\=xxxx\=\kill \\
+    $\exists$ a relation $\twouparrow$ such that \\
+    \> for all programs $e_S \in S$ and \\
+    \> for all pairs $(e_T', \phi) \in \mathcal{L}$, \\
+    \> $e_S \compile e_T$ \\
+    \> $e_T' \bowtie e_T$ (link $e_T'$ and $e_T$) preserves the
+    behavior of $\twouparrow(e_T, \phi) \bowtie e_S$ \\
+    where \\
+    \> $\twouparrow$ is the inverse of compilation on compiler output
+  \end{tabbing}
+\end{thm}
+
+
+\section{Concluding Thoughts}
+\begin{itemize}
+\item Compositional compiler correctness is still an open problem.  We
+  are only starting to understand the advantages and drawbacks of
+  various approaches.
+\item We need research to come up with good proof architectures.
+\item It is still a difficult problem to link with languages different
+  from your own.
+\item Preserving static information as far down as possible hopefully
+  gives you enough information to insert as few dynamic checks as
+  possible once you reach the end of compilation.
+\end{itemize}
+
+
+\end{document}
