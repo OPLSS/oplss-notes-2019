@@ -1,0 +1,328 @@
+%%%% Generic manuscript mode
+\documentclass[ manuscript,screen, nonacm]{acmart}
+
+\usepackage{amsmath}
+\usepackage{upgreek}
+\usepackage{mathtools}
+\usepackage{mathpartir}
+\usepackage{syntax}
+\usepackage{amsthm}
+\usepackage{hyperref}
+\input{cmds}
+
+%%
+%% \BibTeX command to typeset BibTeX logo in the docs
+% \AtBeginDocument{%
+%   \providecommand\BibTeX{{%
+%     \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+
+\begin{document}
+
+\author{Jiawen Liu}
+\email{jliu223@buffalo.edu}
+
+\author{J\'er\'emy Thibault}
+\email{jeremy.thibault@inria.fr}
+
+\author{Shaowei Zhu}
+\email{shaoweiz@cs.princeton.edu}
+
+\title{Lecture Notes on Practical Foundations for Programming Languages}
+\subtitle{Part 4: Dynamic Classification}
+
+\maketitle
+
+These are lecture notes taken during Robert Harper's course on foundations of
+programming languages at the Oregon Programming Language Summer School 2019.
+See also a \textnf{PFPL} supplement on exceptions at \href{http://www.cs.cmu.edu/~rwh/pfpl/supplements/exceptions.pdf}{http://www.cs.cmu.edu/~rwh/pfpl/supplements/exceptions.pdf}.
+
+\section{Motivation}
+
+In this lecture, the goal is to build an exception control mechanism that:
+\begin{itemize}
+    \item does not rely on any convention about the kind of data that is associated
+    with an exception
+    \item that ensures integrity and confidentiality of data: no third party should be able
+    to intercept an exception intended for a particular handler
+\end{itemize}
+
+This is implemented by using dynamically created classes of data, and associating
+capabilities to them capabilities representing integrity and confidentiality of the
+associated data.
+
+\section{Static Classification}
+Dynamic classifications is to oppose to static classification, i.\@e\@., types built in the form of finite sums.
+Indeed, in a programming language equipped with static classification, 
+a type is computed by solving a type equation: 
+\[
+\mathcal{U} \cong \big[
+\mathtt{num} \hookrightarrow \omega, 
+\mathtt{nil} \hookrightarrow \mathbf{1}, 
+\mathtt{cons} \hookrightarrow \mathcal{U} \times \mathcal{U}, 
+\mathtt{fun} \hookrightarrow \mathcal{U} \rightarrow \mathcal{U}, ...
+\big] 
+\]
+where each summand is a class of values.
+
+Dynamic dispatch can be seen as a way to work with the data typed as above.
+When we want to manipulate a value of this data type, we need to \emph{unfold} it and
+then pattern-match on the type.
+\[
+\mathtt{case}(u, \mathtt{num} \hookrightarrow \dots; \dots; \mathtt{cons}
+  \hookrightarrow \langle x_1, x_2\rangle)
+\]
+The case analysis reveals further information about the type of the data that makes downstream manipulations possible.
+
+Datatypes are \emph{abstract} (statically "new": even you write the same implementation twice, they are two different types) recursive \emph{sums} (static).
+Hence, this is an issue of using \emph{generative} datatypes vs \emph{concrete} datatypes.
+
+\section{Dynamic Classification}
+
+Now, we want a \emph{dynamically extensible} sum: \(\tau_1 + \tau_2 + \ldots\), generating
+new datatypes at runtime.
+
+This idea of dynamically ``new'' connects closely to the notions of information-flow or 
+knowledge-flow: a dynamic new class corresponds to an unguessable secret (or perfect
+encryption, by \(\alpha\)-conversion), 
+% JT: I didn't really understand this part
+% SZ: I think he wanted to say that he wants a mechanism where the naming of exceptions does not matter. But I could not find a clear way to express this.
+and one could control the flow of information by choosing who knows the secret.
+
+We obtain abstract datatypes, with \emph{induced capabilities} that express integrity and confidentiality, where
+\begin{itemize}
+    \item the implementer is responsible for the integrity of data;
+    \item the client is responsible for confidentiality.
+\end{itemize}
+
+In particular, this may be used to implement exceptions: ``shared secrets'' between a raiser
+and a particular handler. In this case,
+\begin{itemize}
+    \item the raiser is the implementer responsible for the integrity of the exception
+    \item handlers other than the designated handler cannot decode the secret, thus are unable to handle the exception while being well-typed
+\end{itemize}
+
+Let us assume that there already exists an exception control-flow mechanism in our language.
+We will not focus on implementing the exception data itself.
+
+\section{Implementation of the exception datatype}
+
+\paragraph{Idea} We are going to associate with each exception  a new class. 
+An exception is raised by specifying its class;
+and an exception is handled by dispatching on the class.
+% \textbf{idea}: associate a class that shows how to encrypt it
+
+\subsection{Statics}
+
+\begin{align*}
+    \textrm{\emph{<Type>}}~\tau &::= \cdots \mid \clsfd\\
+    \textrm{\emph{<Value>}}~v &::= \cdots \mid \inharp{c}{v} \quad\quad & :\clsfd\\
+    \textrm{\emph{<Comp>}}~m &::= \cdots \mid \isin{c}{v}{x.m_1}{m_2} &\approxty \tau\\
+    &\phantom{::=} \mid \new{\tau}{c.m}
+\end{align*}
+
+Here, 
+\(c\) represents a class, 
+used as an indexing scheme to distinguish between different exceptions. 
+The computation \(\isin{c}{v}{x.m_1}{m_2}\) type checks as \(\tau\) 
+if both \(m_1 \approxty \tau\)
+and \(m_2 \approxty \tau\), 
+and \(v : \clsfd\). 
+Its semantics is that it checks 
+if \(v\) is in \(c\), and performs \([x/v]m_1\) in that case, or \(m_2\) otherwise.
+Finally, \(\new{\tau}{c.m}\) declares a new class \(c\) in \(m\).
+
+We also update our typing judgments to include an environment \(\Sigma\) of class binders associated with types.
+\begin{align*}
+    \Gamma \vdash_{\Sigma}& v : \tau\\
+    \Gamma \vdash_{\Sigma}& m \approxty \tau
+\end{align*}
+This environment \(\Sigma\) declares the active classes in the current scope.
+Note that, in our formalism, \(c\) is a class binder that is \emph{not} a variable.
+In particular, the order in \(\Sigma\) does not matter, it is allowed to weaken \(\Sigma\),
+and we can perform \emph{injective} renaming, but not substitute (the renaming must be
+injective to preserve disequality).
+
+The typing rule for ``new'' follows:
+\begin{mathpar}
+\inferrule
+{
+\Gamma \vdash_{\Sigma, a\sim \tau} m \approxty \tau'
+}
+{
+\Gamma \vdash_\Sigma \new{\tau}{a.m} \approxty \tau'
+}
+\end{mathpar}
+
+
+\subsection{Dynamics}
+
+We consider the following:
+\begin{itemize}
+    \item states $\nu\Sigma\{m\}$: classes $\nu$ that could be used in computation $m$;
+    \item transitions $\nu \Sigma \{m\} \mapsto \nu \Sigma'\{m'\}$: where the invariant $\Sigma \subseteq \Sigma'$ holds;
+    \item final states $\nu \Sigma \{\ret{v}\}$
+\end{itemize}
+
+We introduce a static judgment, meaning that a state is well-formed:
+\[
+  \nu\Sigma\{m\} \textrm{OK} \triangleq \cdot\vdash_{\Sigma} m\approxty \tau~\text{for any}~\tau
+  \]
+
+The semantics of new is:
+\[
+  \nu\Sigma\{\new{\tau}{c.m}\} \mapsto \nu\Sigma,c\sim\tau\{m\}.
+\]
+It allocates new classes of data, for ``encryption'' purposes.
+
+The semantics of \texttt{in} and \texttt{isin} are:
+\[
+  \nu\Sigma,c\sim\tau,c'\sim\tau'\{\isin{c}{\inharp{c'}{v'}}{x.m_1}{m_2} \mapsto
+  \begin{cases}
+  [v'/x]m_1 \text{ if \(c=c'\)}\\
+  m_2 \text{ otherwise}
+  \end{cases}.
+\]
+The first case corresponds to the case where one learns the equality, and is able to perform
+the computation. In the second case, nothing at all is learnt.
+
+% \paragraph{Scoping}
+% JT: I didn't really get this part. Can someone try to explain it in better terms?
+% SZ: I can't understand this either. It's something he mentioned but seems to be isolated from the main development
+% $m \mapsto_{\Sigma} m'$ where transition is parameterized by $\Sigma$, is scoped.
+% JT: I removed the paragraph. It's probably not that important!
+
+\subsection{Class references}
+Finally, we introduce the idea of class references.
+
+\begin{align*}
+    \tau &::= \cdots \mid \tau\ \clsty \quad\quad &\text{the type of class references}\\
+    v &::= \cls{c} &\text{written as } \&c\\
+    m &::= \reveal{v}{c.m}
+\end{align*}
+
+The additional typing rules are:
+\begin{mathpar}
+\inferrule{\empty}{\Gamma\vdash_{\Sigma, c~\tau} \&c : \tau\ \clsty}
+\and
+\inferrule{\Gamma \vdash_\Sigma v:\tau\ \clsty\\ 
+\Gamma \vdash_{\Sigma, c\sim \tau} m  \approxty \tau'}{
+\Gamma \vdash_{\Sigma}  \reveal{v}{c.m} \approxty \tau'
+}
+\end{mathpar}
+
+Reveal has the following semantics:
+\[
+\nu \Sigma, c\sim\tau\{ \reveal{\&c}{c.m}\} \mapsto \nu\Sigma, c\sim \tau \{m\}
+\]
+This corresponds to guessing by \(\alpha\)-conversion.
+
+We may now define two shortcuts, that behaves like ``in'' and ``isin'', but for
+class references:
+\begin{align*}
+  \inrefharp{v}{v'} &\triangleq \reveal{v}{c.\inharp{c}{v'}} \approxty \clsfd\\
+  \isinref{v}{v'}{x.m_1}{m_2} &\triangleq \reveal{v}{c.\isin{c}{v'}{x.m_1}{m_2}}.
+  % \isin{\cdot}{\inrefharp{v}{v'}}{x.m_1}{m_2} 
+\end{align*}
+% and \(\isinref{v}{v'}{x.m_1}{m_2}\).
+
+\subsection{Possession of a class reference}
+Possession of a class reference affords \emph{full rights} to create and analyze classified values.
+One may associate to a type \(\tau\ \clsty\) the following tuple:
+\[
+  \tau\ \clsty \approx 
+  \left\{
+    \begin{array}{lr}
+    \mk: &\tau \rightarrow \clsfd \\
+    \mk^{-1}:  &\clsfd \rightarrow \tau\ \option
+    \end{array}
+  \right\}
+\]
+and to the corresponding value \(\&a\) the pair:
+\[
+\& a \mapsto 
+\left \{
+\begin{array}{l}
+  \mk \hookrightarrow \lambda[\tau](x : \inharp{a}{x})\\
+  \mk^{-1} 
+    \hookrightarrow \lambda[\clsfd](x.\isin{a}{x}{y.\ret{1.y}}{\ret{2.<>}})
+    %(x.isin[a](x;y.ret(1.y;ret(2.<>))))
+\end{array}
+\right\}
+\]
+% JT: what is y here? I'm a bit confused
+
+
+The following properties hold:
+\begin{itemize}
+    \item the possessor of \(\mk\) is held responsible for the integrity of the underlying value, and can enforce the value respects an invariant
+    % $a \sim P_a$ rep invariant. for example, make sure that the value adheres to its rep invariant
+    \item the possessor of \(\mk^{-1}\) can compromise the confidentiality, and confirm
+    that the invariant holds
+    % — and know that associated invariant holds.
+\end{itemize}
+
+% Using this scheme
+
+% \[
+% \&a \left\{ 
+% \begin{array}{lr}
+%    \text{send a party mk}  &  \\
+%    \text{send another party} mk^{-1} & 
+% \end{array}
+% \right\}
+% \]
+
+\section{An application in ML}
+
+Let us introduce some concepts from the ML language.
+
+\begin{itemize}
+    \item \(\mathtt{\underline{exception}}\ X\ \mathtt{\underline{of}}\ \tau\) declares an exception
+    \(X\) carrying values of type \(\tau\)
+    \item \(\mathtt{\underline{raise}}\ e\) where \(e : \mathtt{\underline{exn}}\) (that is,
+    \(\clsfd\)) raises an exception
+    \item \(e\ \mathtt{\underline{handle}}\ X(x)\) declares an handler. However, one might
+    as well write \(z\) instead of \(X(x)\), because one doesn't need to have access
+    to the name of the exception to handle it.
+\end{itemize}
+
+So what does \(\mathtt{\underline{exception}}\ X\ \mathtt{\underline{of}}\ \tau\) actually mean?
+
+\[
+  \mathtt{\underline{val}}\ X =
+  \left \{
+  \begin{array}{lr}
+  \mathtt{\underline{raise}}[\tau] & \hookrightarrow \text{\clsfd} \rightarrow \tau\\
+  \mathtt{\underline{handle}}[\tau] & \hookrightarrow \tau \rightarrow (\clsfd \rightarrow \tau) \rightarrow \tau
+  \end{array}
+  \right\}
+\]
+The handler takes two parameters: the expression to evaluate, and a function to call
+if an exception is raised.
+
+In ML, \(\mathtt{\underline{raise}}\) has the following meaning, where \(X : \tau \rightarrow \clsfd\) and \(x : \tau\):
+\[
+  \mathtt{\underline{raise}}~X(v) \hookrightarrow \bnd{\cmp{X.\mk(v)}}{y.\mathtt{RAISE}(y)}{
+  z.\mathtt{RAISE}(z)}
+\]
+This computes the content of the exception, classify it, and then calls the system
+implementation for raising an exception. The second \(\mathtt{RAISE}\) is used if
+the inner computation raises an exception itself.
+
+Similarly, \(\underline{\mathtt{handle}}\) has the following meaning:
+\[
+  m~\mathtt{\underline{handle}}~X(x) \Rightarrow m' \hookrightarrow
+    \bnd{\cmp{m}}{x.\ret{x}}{y.\bnd{\cmp{x.\mk^{-1}(y)}}{x.m'}{z.\mathtt{RAISE}(z)}}
+\]
+If the execution of \(m\) succeeds, the value is immediately returned. Otherwise,
+the exception is decoded (\(\mk^{-1}\)), then handled by \(m'\). Again, one need to handle
+the case of an inner exception.
+
+Finally, it is now possible to see exceptions as dynamically allocating a new class:
+\[
+\underline{\mathtt{exception}}~X~\underline{\mathtt{of}}~\tau \hookrightarrow
+\new{\tau}{c.\langle \mk\hookrightarrow \dots, \mk^{-1} \hookrightarrow \dots\rangle}
+\]
+
+\end{document}
+\endinput
